@@ -5,8 +5,17 @@
 ## 0.2.0 — first standalone release
 
 MeshKit moves out of the OpenSWMM GUI repository (`libraries/meshkit`) into its
-own repository, with its history. Apart from the fixes below, the library is
-unchanged from the GUI's 2026-11-12 copy; what is new is the repository around it.
+own repository, with its history. Apart from the addition and fixes below, the
+library is unchanged from the GUI's 2026-11-12 copy; what is new is the
+repository around it.
+
+Added:
+
+- Initial cell velocity: `MeshTriangle::initU` and `initV` (m/s whatever the
+  project units; 0, 0 = at rest), read from and written to the
+  `[2D_INITIAL_VELOCITY]` section, offered as the `initU`/`initV` cell
+  parameters and kept through quad pairing. An external mesh file's section
+  wins over the `.inp`'s. Ported from the GUI's copy (2026-11-13).
 
 Fixed:
 
