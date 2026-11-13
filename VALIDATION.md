@@ -1,5 +1,9 @@
 # MeshKit 0.2 completion validation — 2026-10-29/30
 
+> Recorded in the OpenSWMM GUI repository, where MeshKit lived as
+> `libraries/meshkit` until it moved to this repository (2026-11-13). Commands and
+> evidence paths below are relative to that repository.
+
 All five follow-on items are implemented: native mixed planning and source/size preparation, representative shared-contact checks, a complete six-million-scale mixed job, Python bindings/packages, and the authorized Apache-2.0 license. Measurements below are local Apple arm64/macOS observations, not portable speed or worst-case terrain guarantees.
 
 | Gate | Result |

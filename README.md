@@ -16,7 +16,7 @@ The `_qt` names make the remaining transitional API explicit. These targets do n
 ## Build and use
 
 ```sh
-cmake -S libraries/meshkit -B build/meshkit-standalone \
+cmake -S . -B build/meshkit-standalone \
   -DCMAKE_PREFIX_PATH=/path/to/Qt/6/matching-platform \
   -DCMAKE_BUILD_TYPE=Release -DMESHKIT_BUILD_TESTS=ON
 cmake --build build/meshkit-standalone
@@ -26,10 +26,24 @@ cmake --install build/meshkit-standalone --prefix /your/install/prefix
 
 For standard C++ meshing, streaming I/O and events, configure with `-DMESHKIT_BUILD_QT=OFF`. Tests need Qt Test only when the Qt targets are enabled. There is no network fetch, sibling-checkout requirement, or application build dependency.
 
-A downstream client:
+A downstream client, from an installed MeshKit:
 
 ```cmake
 find_package(MeshKit 0.2 CONFIG REQUIRED COMPONENTS core io runtime)
+target_link_libraries(my_mesher PRIVATE meshkit::core meshkit::io)
+```
+
+or from a pinned release, built as part of the client:
+
+```cmake
+include(FetchContent)
+set(MESHKIT_BUILD_QT OFF CACHE BOOL "" FORCE)   # Qt-free core, io and runtime
+set(MESHKIT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(MeshKit
+    GIT_REPOSITORY https://github.com/HydroCouple/Meshkit.git
+    GIT_TAG        v0.2.0
+    GIT_SHALLOW    TRUE)
+FetchContent_MakeAvailable(MeshKit)
 target_link_libraries(my_mesher PRIVATE meshkit::core meshkit::io)
 ```
 
@@ -58,7 +72,7 @@ This measures a uniform-grid CDT, four constrained sides, positive triangle area
 
 MeshKit is licensed under **Apache-2.0**, following the rights holder's explicit authorization on 2026-10-29. See [LICENSE](LICENSE), [NOTICE](NOTICE), [authorization and scope](RELICENSING.md), and the [historical provenance inventory](PROVENANCE.md). The predicates retain their public-domain notice. The surrounding GUI remains GPL; earlier GPL revisions retain their existing grants. Optional Qt/runtime dependencies retain their own terms and are not bundled in the Python wheel.
 
-[Python bindings](python/README.md) build with `python -m pip install ./libraries/meshkit`. Python 3.10+, a C++17 compiler, CMake and Python development headers are required for source builds; NumPy is optional. Output buffers are owned and read-only, with zero-copy NumPy views. Native worker threads release the GIL, poll bounded progress and support cancellation. Terrain queries run in native code, with no per-cell Python callbacks.
+[Python bindings](python/README.md) build with `python -m pip install .` from a checkout, or install the published wheel with `python -m pip install meshkit`. Python 3.10+, a C++17 compiler, CMake and Python development headers are required for source builds; NumPy is optional. Output buffers are owned and read-only, with zero-copy NumPy views. Native worker threads release the GIL, poll bounded progress and support cancellation. Terrain queries run in native code, with no per-cell Python callbacks.
 
 The standard C++ project includes planning, source simplification, conservative sizing, mixed job assembly, shared-constraint audits and generic file I/O. GDAL reprojection/file loading, GUI project capture, coupling attributes, adoption/undo and renderer integration remain application adapters. Native callers supply a common planar frame and an authored graph with crossing intersections noded; exact shared vertices/overlaps do not require proximity welding. Unsupported required mapped geometry fails with a reason; preferred quads can fall back to triangles. General all-quad decomposition of arbitrary polygons is not promised.
 

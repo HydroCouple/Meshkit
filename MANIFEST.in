@@ -1,4 +1,4 @@
-include CMakeLists.txt LICENSE NOTICE RELICENSING.md README.md NATIVE_API.md PROVENANCE.md VALIDATION.md
+include CMakeLists.txt LICENSE NOTICE RELICENSING.md README.md NATIVE_API.md PROVENANCE.md VALIDATION.md CHANGELOG.md
 recursive-include cmake *.cmake *.in
 recursive-include include *.h *.hpp
 recursive-include src *.cpp *.hpp

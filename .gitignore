@@ -1,4 +1,9 @@
-/build/
-/dist/
+# Build trees and packaging output
+build/
+build-*/
+dist/
+wheelhouse/
 *.egg-info/
 __pycache__/
+*.pyc
+.DS_Store

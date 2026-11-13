@@ -5,7 +5,7 @@ public-domain robust predicates. They contain no Qt, GUI, engine, GDAL or Python
 dependency. Configure `MESHKIT_BUILD_QT=OFF` to build and install them alone.
 
 ```sh
-cmake -S libraries/meshkit -B build-meshkit-native \
+cmake -S . -B build-meshkit-native \
   -DMESHKIT_BUILD_QT=OFF -DMESHKIT_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
 cmake --build build-meshkit-native
 ctest --test-dir build-meshkit-native --output-on-failure

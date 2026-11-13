@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    # The Qt-free targets (runtime, core, io, CLI) and their tests: what a
+    # downstream consumer such as HydroCoupleSDK builds.
+    name: Native (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-14, windows-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -DMESHKIT_BUILD_QT=OFF -DMESHKIT_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+
+  qt:
+    # The transitional Qt targets (core_qt, model_qt, io_qt) used by the
+    # OpenSWMM GUI, with their tests.
+    name: Qt (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4.5.0
+        with:
+          version: '6.5.3'
+          cache: true
+
+      - name: Configure
+        run: cmake -S . -B build -DMESHKIT_BUILD_QT=ON -DMESHKIT_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Test
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --test-dir build --output-on-failure
