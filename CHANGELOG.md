@@ -12,8 +12,12 @@ own repository, with its history. The library is unchanged from the GUI's
   `find_package(MeshKit)` or fetch a tagged release with `FetchContent`.
 - Continuous integration: the Qt-free targets on Linux, macOS and Windows, and
   the Qt targets on Linux.
-- Release wheels: on a `v*` tag, cibuildwheel builds `meshkit` for CPython
-  3.10–3.13 on Linux, macOS and Windows and publishes it, with an sdist, to PyPI.
+- Release wheels: on a `v*` tag, cibuildwheel builds the Python package for
+  CPython 3.10–3.13 on Linux, macOS and Windows and publishes it, with an sdist,
+  to PyPI as `hydrocouple.meshkit` (`pip install hydrocouple.meshkit`, then
+  `import meshkit`; PyPI refuses the name `meshkit` as too close to the
+  unrelated `mesh-kit`). The release refuses a tag that does not match the
+  version in `CMakeLists.txt` and `setup.py`.
 - Apache-2.0 (rights-holder authorization recorded in RELICENSING.md); the
   vendored robust predicates keep their public-domain notice.
 - Project governance shared with the other HydroCouple repositories:

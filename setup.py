@@ -25,7 +25,9 @@ class NativeBuild(build_ext):
         subprocess.check_call(["cmake", "--build", str(build), "--config", "Release",
                                "--target", "meshkit_python", "--parallel", "4"])
 
-setup(name="meshkit", version="0.2.0", description="Independent mixed meshing with terrain certificates and streaming I/O",
+# Distributed as hydrocouple.meshkit (PyPI refuses "meshkit" as too close to the
+# unrelated "mesh-kit"); the import package is still `meshkit`.
+setup(name="hydrocouple.meshkit", version="0.2.0", description="Independent mixed meshing with terrain certificates and streaming I/O",
       url="https://github.com/HydroCouple/Meshkit",
       project_urls={"Source": "https://github.com/HydroCouple/Meshkit",
                     "Changelog": "https://github.com/HydroCouple/Meshkit/blob/main/CHANGELOG.md"},

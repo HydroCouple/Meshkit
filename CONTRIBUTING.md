@@ -138,6 +138,14 @@ MAJOR.MINOR.PATCH[-PRERELEASE]
 
 The version is declared in two places that must agree: `project(MeshKit VERSION …)` in [CMakeLists.txt](./CMakeLists.txt) and `version=` in [setup.py](./setup.py). Release tags are `v<version>` (e.g., `v0.2.0`); pushing a tag builds and publishes the Python wheels (Section 12).
 
+### Making a release
+
+1. On `main`, set the new version in `CMakeLists.txt` (`project(MeshKit VERSION X.Y.Z …)`) and in `setup.py` (`version="X.Y.Z"`, or the PEP 440 form of a pre-release such as `1.0.0b1`; CMake carries only `X.Y.Z`), and move the **Unreleased** entries of [CHANGELOG.md](./CHANGELOG.md) under an `X.Y.Z` heading.
+2. Commit, tag that commit `vX.Y.Z` (e.g., `git tag -a v0.3.0 -m "MeshKit 0.3.0"`), and push the commit and the tag. The release workflow refuses a tag that does not match both files, then publishes the wheels and the sdist.
+3. Move each consumer to the release in a commit of its own: set `MESHKIT_GIT_TAG` in `cmake/FetchMeshKit.cmake` of the OpenSWMM GUI and of HydroCoupleSDK to `vX.Y.Z`. Their configure step refuses a fetched MeshKit whose declared version is not the pinned one, and their release builds (`-DMESHKIT_REQUIRE_PINNED=ON`) ignore local checkouts.
+
+A published tag is never moved or reused; a fix is a new patch release.
+
 ### Pre-Release Trajectories
 
 During active release testing periods, the following pre-release labels are used in sequence:
@@ -258,7 +266,7 @@ All pull requests are automatically tested via the project's CI pipeline (GitHub
 | `ci.yml` | **CI** | Push and PR to `main` | Builds the Qt-free targets with tests and runs `ctest` on ubuntu-latest, macos-14, and windows-latest; builds the Qt targets with tests and runs `ctest` on ubuntu-latest (Qt 6.5) |
 | `codeql.yml` | **CodeQL** | Push and PR to `main`, weekly | Security analysis of the C++ (all targets, built) and Python sources |
 | `scorecard.yml` | **Scorecard supply-chain security** | Push to `main`, weekly | OpenSSF Scorecard supply-chain checks |
-| `release_wheels.yml` | **Release Wheels** | `v*` tags, manual (manual runs build without publishing) | cibuildwheel builds `meshkit` for CPython 3.10–3.13 on Linux, macOS, and Windows, tests each wheel, builds an sdist, and publishes them to PyPI by trusted publishing |
+| `release_wheels.yml` | **Release Wheels** | `v*` tags, manual (manual runs build without publishing) | Checks that the tag matches the declared version, then cibuildwheel builds `hydrocouple.meshkit` for CPython 3.10–3.13 on Linux, macOS, and Windows, tests each wheel, builds an sdist, and publishes them to PyPI by trusted publishing |
 
 Contributors are expected to build and run the test suite locally before opening a PR to minimize unnecessary CI failures:
 

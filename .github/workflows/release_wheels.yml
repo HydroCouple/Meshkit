@@ -1,12 +1,17 @@
 name: Release Wheels
 
-# Builds the `meshkit` Python package for every supported platform and
-# publishes it to PyPI when a version tag is pushed. A manual run builds and
-# uploads the artifacts without publishing.
+# Builds the Python package (distribution `hydrocouple.meshkit`, imported as
+# `meshkit`) for every supported platform and publishes it to PyPI when a
+# version tag is pushed. A manual run builds and uploads the artifacts without
+# publishing.
 #
-# Publishing uses PyPI trusted publishing: the PyPI project `meshkit` must
-# list this repository, this workflow file and the `pypi` environment as a
-# trusted publisher. No API token is stored.
+# Publishing uses PyPI trusted publishing: the PyPI project
+# `hydrocouple.meshkit` must list this repository, this workflow file and the
+# `pypi` environment as a trusted publisher. No API token is stored.
+#
+# A tag vX.Y.Z must name the version the sources declare (CMakeLists.txt and
+# setup.py); the version job refuses anything else, so a MeshKit tag always
+# means one version for the wheels and for the CMake consumers that fetch it.
 
 on:
   push:
@@ -17,8 +22,39 @@ permissions:
   contents: read
 
 jobs:
+  version:
+    name: Tag matches version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Compare the tag with CMakeLists.txt and setup.py
+        if: github.ref_type == 'tag'
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          python -m pip install --quiet packaging
+          python - <<'EOF'
+          import os, pathlib, re, sys
+          from packaging.version import Version
+          tag = Version(os.environ["TAG"].removeprefix("v"))
+          cmake = re.search(r"project\(MeshKit VERSION (\d+\.\d+\.\d+)",
+                            pathlib.Path("CMakeLists.txt").read_text()).group(1)
+          python = re.search(r'version="([^"]+)"', pathlib.Path("setup.py").read_text()).group(1)
+          problems = []
+          if Version(cmake).release != tag.release:
+              problems.append(f"CMakeLists.txt declares {cmake}")
+          if Version(python) != tag:
+              problems.append(f"setup.py declares {python}")
+          if problems:
+              sys.exit(f"tag {os.environ['TAG']} does not match the sources: " + "; ".join(problems))
+          print(f"tag {os.environ['TAG']} matches CMakeLists.txt {cmake} and setup.py {python}")
+          EOF
+
   wheels:
     name: Wheels (${{ matrix.os }})
+    needs: [ version ]
     strategy:
       fail-fast: false
       matrix:
@@ -43,6 +79,7 @@ jobs:
 
   sdist:
     name: Source distribution
+    needs: [ version ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -72,7 +109,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/meshkit
+      url: https://pypi.org/p/hydrocouple.meshkit
     permissions:
       id-token: write
     steps:

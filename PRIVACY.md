@@ -33,7 +33,7 @@ Nothing, for us. Using the software sends no information to the project, and the
 
 ## 3. This package: MeshKit
 
-MeshKit is a C++ meshing library, a command-line program (`meshkit`), and the `meshkit` Python package. It has no accounts, telemetry, analytics, crash reporting, or update checks, and it never contacts a project-run server.
+MeshKit is a C++ meshing library, a command-line program (`meshkit`), and the `meshkit` Python package (distributed as `hydrocouple.meshkit`). It has no accounts, telemetry, analytics, crash reporting, or update checks, and it never contacts a project-run server.
 
 **Network connections: none.** The library, the command-line program, and the Python package make no network connections and read no environment variables. The Python package needs nothing else at run time; NumPy is used only if you have installed it. Nothing is downloaded at run time.
 
