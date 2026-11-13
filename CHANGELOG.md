@@ -16,6 +16,10 @@ Fixed:
   exact `orient2d`/`incircle` arithmetic depends on. On Linux arm64 that made
   constraint insertion and point location fail (`meshkit_meshcdt_test`,
   `meshkit_meshgenerator_v2_test`); Apple Clang can fuse within an expression.
+- macOS wheels for x86_64, which cibuildwheel cross-builds on arm64 runners,
+  now contain x86_64 code: `setup.py` passes the architecture named in
+  `ARCHFLAGS` to CMake, and always sets one, so a reused build tree cannot keep
+  another.
 
 Repository:
 
@@ -23,7 +27,8 @@ Repository:
 - Builds, tests and installs on its own (`cmake -S .`); consumers use
   `find_package(MeshKit)` or fetch a tagged release with `FetchContent`.
 - Continuous integration: the Qt-free targets on Linux, macOS and Windows, and
-  the Qt targets on Linux.
+  the Qt targets on Linux. macOS jobs run on `macos-latest` (GitHub retired the
+  `macos-14` runners).
 - Release wheels: on a `v*` tag, cibuildwheel builds the Python package for
   CPython 3.10–3.13 on Linux, macOS and Windows and publishes it, with an sdist,
   to PyPI as `hydrocouple.meshkit` (`pip install hydrocouple.meshkit`, then

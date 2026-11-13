@@ -1,6 +1,8 @@
 # SPDX-License-Identifier: Apache-2.0
 from pathlib import Path
 import os
+import platform
+import re
 import subprocess
 import sys
 import sysconfig
@@ -21,6 +23,11 @@ class NativeBuild(build_ext):
         if sys.platform == "darwin":
             minimum = os.environ.get("MACOSX_DEPLOYMENT_TARGET") or sysconfig.get_config_var("MACOSX_DEPLOYMENT_TARGET") or "15.0"
             options.append(f"-DCMAKE_OSX_DEPLOYMENT_TARGET={minimum}")
+            # cibuildwheel cross-builds x86_64 wheels on arm64 runners and names the
+            # target in ARCHFLAGS ("-arch x86_64"); CMake ignores that, so pass it on.
+            # Always set it, so a reused build tree cannot keep another architecture.
+            archs = re.findall(r"-arch\s+(\S+)", os.environ.get("ARCHFLAGS", "")) or [platform.machine()]
+            options.append(f"-DCMAKE_OSX_ARCHITECTURES={';'.join(archs)}")
         subprocess.check_call(["cmake", "-S", str(ROOT), "-B", str(build), *options])
         subprocess.check_call(["cmake", "--build", str(build), "--config", "Release",
                                "--target", "meshkit_python", "--parallel", "4"])
