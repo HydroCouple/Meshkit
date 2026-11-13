@@ -5,8 +5,20 @@
 ## 0.2.0 — first standalone release
 
 MeshKit moves out of the OpenSWMM GUI repository (`libraries/meshkit`) into its
-own repository, with its history. The library is unchanged from the GUI's
-2026-11-12 copy; what is new is the repository around it.
+own repository, with its history. Apart from the fixes below, the library is
+unchanged from the GUI's 2026-11-12 copy; what is new is the repository around it.
+
+Fixed:
+
+- The robust predicates are compiled without floating-point contraction
+  (`-ffp-contract=off`). GCC fuses multiply-adds by default wherever the CPU has
+  FMA, which every arm64 CPU does; a fused multiply-add skips a rounding the
+  exact `orient2d`/`incircle` arithmetic depends on. On Linux arm64 that made
+  constraint insertion and point location fail (`meshkit_meshcdt_test`,
+  `meshkit_meshgenerator_v2_test`); Apple Clang can fuse within an expression.
+
+Repository:
+
 
 - Builds, tests and installs on its own (`cmake -S .`); consumers use
   `find_package(MeshKit)` or fetch a tagged release with `FetchContent`.

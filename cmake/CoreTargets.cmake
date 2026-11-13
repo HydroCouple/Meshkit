@@ -5,13 +5,20 @@ set_target_properties(meshkit_predicates PROPERTIES
 target_include_directories(meshkit_predicates PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/vendor/predicates>)
 if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU|AppleClang")
+    # The predicates are exact only if every product and sum is rounded on its
+    # own: a fused multiply-add skips a rounding and breaks the error terms.
+    # GCC fuses by default (-ffp-contract=fast) wherever the CPU has FMA, which
+    # every arm64 CPU does; Clang fuses within an expression. Either corrupts
+    # orient2d/incircle, and the constrained Delaunay kernel then fails.
     target_compile_options(meshkit_predicates PRIVATE
+        -ffp-contract=off
         -Wno-deprecated-non-prototype -Wno-strict-prototypes
         -Wno-unused-function -Wno-unused-variable
         -Wno-implicit-function-declaration -Wno-old-style-definition)
 endif()
 if(MSVC)
-    target_compile_options(meshkit_predicates PRIVATE /wd4996 /wd4244 /wd4267 /wd4101)
+    # The default model, restated so a consumer's global /fp:fast cannot reach the predicates.
+    target_compile_options(meshkit_predicates PRIVATE /fp:precise /wd4996 /wd4244 /wd4267 /wd4101)
 endif()
 
 
