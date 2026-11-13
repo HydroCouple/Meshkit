@@ -6,6 +6,11 @@ namespace meshkit::native_detail
 {
 // Spatial index over actual constrained cell edges only, not every free grid
 // edge. Reconstruct shared source chains across CDT and fixed patch ownership.
+/**
+ * @brief Finds the chain of mesh edges that covers a straight source segment.
+ *
+ * Holds references to the mesh and work budget, which must outlive it.
+ */
 class SourceChains
 {
     struct Node {
@@ -63,6 +68,14 @@ class SourceChains
     }
 
 public:
+    /**
+     * @brief Index the distinct non-degenerate edges.
+     * @param[in] m Borrowed mesh whose vertices the edges index (unchecked); must outlive this.
+     * @param[in] edges Candidate edges, taken by value; self-loops and repeated undirected
+     * edges are dropped.
+     * @param[in,out] w Borrowed budget charged while building and querying; must outlive this.
+     * @throws Stop `workspace_limit` from the workspace estimate, or other failures from w.
+     */
     SourceChains(const Mesh &m, std::vector<Edge> edges, Work &w) : mesh_(m), work_(w)
     {
         std::unordered_set<std::uint64_t> unique;
@@ -76,6 +89,19 @@ public:
         if (!edges_.empty())
             build(0, int(edges_.size()));
     }
+    /**
+     * @brief Shortest (fewest-edge) chain of indexed edges from one vertex to another along
+     * their straight segment.
+     *
+     * An edge qualifies when both endpoints lie within eps of the segment and between its ends,
+     * with eps = 32 * DBL_EPSILON * max(1, length, |endpoint coordinates|) in XY units; edges
+     * are never followed toward decreasing position along the segment. Only x and y are used.
+     * @param[in] from Start vertex index (unchecked).
+     * @param[in] to End vertex index (unchecked).
+     * @return Vertex indices from @p from to @p to, both included; empty when the two
+     * vertices share XY coordinates or no chain exists.
+     * @throws Stop from the work budget.
+     */
     std::vector<Index> chain(Index from, Index to) const
     {
         const auto &a = mesh_.vertices[from], &b = mesh_.vertices[to];

@@ -380,6 +380,14 @@ Scientific software reviews can intersect with contributors' professional intere
 
 MeshKit's reference documentation is its headers, [NATIVE_API.md](./NATIVE_API.md) for the native contract, and [python/README.md](./python/README.md) for the Python package. Validation evidence is recorded in [VALIDATION.md](./VALIDATION.md).
 
+The documentation site, <https://www.hydrocouple.org/Meshkit/>, is built from these sources by the Documentation workflow and published from `main`: Doxygen for the C++ library at the root (configuration in `docs/`), Sphinx for the Python package under `/python/` (sources in `python/docs/`). The Python reference reads `python/meshkit/_meshkit.pyi`, the documented type stub of the native extension; a change to the extension's functions, arguments or result fields updates the stub too. Both builds must stay free of warnings, and the workflow also fails when any class, function, member, enum value or namespace lacks a doc comment (a new namespace is described in `docs/namespaces.dox`). The first sentence of a comment is its brief unless `@brief` is given. To build them locally:
+
+```sh
+(cd docs && doxygen Doxyfile)          # output: docs/html
+python -m pip install -r python/docs/requirements.txt
+sphinx-build -b html -W --keep-going python/docs python/docs/_build/html
+```
+
 All public-facing code elements (classes, structs, functions, enumerations, and their members) must include Doxygen-compatible documentation comments.
 
 Minimum documentation per element:

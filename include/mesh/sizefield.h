@@ -56,6 +56,8 @@
 namespace mesh
 {
 
+/*! \brief Policy for SizeField::build(). Lengths are in mesh (map) units, areas in their
+ *  square; the Qt-typed mirror of meshkit::plan::SizeFieldOptions. */
 struct SizeFieldOptions {
     bool footprintBounds = false; ///< Build a compact min pyramid for verified sizing.
     /*! Element size (edge length, map units) AT a feature.  Callers derive it
@@ -91,9 +93,15 @@ struct SizeFieldOptions {
     std::function<double(double, double)> terrainSizeAt;
     /*! Polygon overrides: inside \c ring the size is min'd with \c h. */
     struct Region {
+        /// Implicitly closed polygon. Entries of regions cap grid centres inside it (odd-even
+        /// rule); box queries use only its bounding box.
         QPolygonF ring;
+        /// Size cap in mesh units. In regions a value not > 0 (including NaN) disables the
+        /// entry; in terrainRegions it must be positive and finite or build() fails.
         double h = 0.0;
     };
+    /*! Size caps applied at grid centres inside each ring, and by bounding box in
+     *  SizeField::minimumSizeInBox(); the area floor still raises them. */
     QVector<Region> regions;
     QVector<Region> terrainRegions; ///< Finer prescribed directional scales; footprint terrain queries only.
 
@@ -118,6 +126,19 @@ struct SizeFieldOptions {
 class SizeField
 {
 public:
+    /**
+     * @brief Smallest target edge length any point of a rectangle can read, for footprint
+     * (verified) sizing.
+     *
+     * Takes the minimum stored grid size over the cells covering the rectangle (clamped to
+     * the grid, including the extra bilinear support column/row), raises a positive result to
+     * the area-floor size, then takes the minimum with the h (also raised to that floor) of
+     * every positive regions entry whose bounding box intersects the rectangle. terrainRegions
+     * are ignored here (see minimumTerrainSizeInBox).
+     * Uses the min pyramid when SizeFieldOptions::footprintBounds was set, else scans cells.
+     * @return Length in mesh units; 0 when the field is invalid, a rectangle coordinate is not
+     * finite, or nothing bounds the size there.
+     */
     // Conservative bound on every bilinear target over this rectangle. Zero
     // means unbounded/invalid field. Includes all interpolation support nodes.
     double minimumSizeInBox(const QRectF &) const;

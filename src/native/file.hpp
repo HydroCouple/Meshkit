@@ -21,12 +21,24 @@
 #endif
 namespace meshkit::native_detail
 {
+/**
+ * @brief Reject empty paths and paths containing an embedded NUL character.
+ * @param[in] p Path to check.
+ * @return True when p is non-empty and has no NUL; existence is not checked.
+ */
 inline bool validPath(const std::filesystem::path &p)
 {
     return !p.empty() && p.native().find(std::filesystem::path::value_type{}) ==
                              std::filesystem::path::string_type::npos;
 }
+/** @brief 64-bit FNV-1a offset basis, the starting value of every running hash. */
 constexpr std::uint64_t hashSeed = 14695981039346656037ull;
+/**
+ * @brief Fold bytes into a running 64-bit FNV-1a hash.
+ * @param[in,out] hash Running hash, updated in place.
+ * @param[in] p Borrowed bytes; may be null only when n is 0.
+ * @param[in] n Number of bytes.
+ */
 inline void hashBytes(std::uint64_t &hash, const unsigned char *p, std::size_t n)
 {
     for (std::size_t i = 0; i < n; ++i) {
@@ -34,6 +46,12 @@ inline void hashBytes(std::uint64_t &hash, const unsigned char *p, std::size_t n
         hash *= 1099511628211ull;
     }
 }
+/**
+ * @brief Exclusive temporary output file that commit() publishes atomically at a target path.
+ *
+ * Copy construction is deleted. Destroying an uncommitted transaction closes and removes the
+ * temporary (errors ignored), so the target is never partially written.
+ */
 class Transaction
 {
     std::filesystem::path target_, temp_;
@@ -41,6 +59,17 @@ class Transaction
     std::FILE *file_ = nullptr;
 
 public:
+    /**
+     * @brief Validate the target and create its exclusive temporary.
+     *
+     * The temporary is `.meshkit-<random>.tmp` in the target's directory (or the current
+     * directory when the target has none), created exclusively (owner read/write only on
+     * POSIX); up to 32 random names are tried while candidates already exist.
+     * @param[in] target Destination file path; copied.
+     * @param[in] options Supplies overwrite and durable, copied for commit().
+     * @throws Stop `path` for an empty or NUL-containing path or a file name that is empty,
+     * `.` or `..`; `open_output` when no temporary can be created (both status Failed).
+     */
     Transaction(const std::filesystem::path &target, const IOOptions &options)
         : target_(target), overwrite_(options.overwrite), durable_(options.durable)
     {
@@ -80,6 +109,7 @@ public:
              "Cannot create an exclusive output temporary: " + std::string(std::strerror(errno)),
              RunStatus::Failed);
     }
+    /** @brief Close and remove the temporary unless commit() published it; errors ignored. */
     ~Transaction()
     {
         if (file_)
@@ -90,7 +120,18 @@ public:
         }
     }
     Transaction(const Transaction &) = delete;
+    /** @brief The open temporary, owned by this object (do not close it); null after commit(). */
     std::FILE *file() const { return file_; }
+    /**
+     * @brief Flush, optionally sync, close and publish the temporary at the target; call once.
+     *
+     * With overwrite the temporary replaces the target (rename(); Windows MoveFileExW with
+     * MOVEFILE_REPLACE_EXISTING). Without it POSIX hard-links the temporary to the target, which
+     * fails if the target exists, then unlinks the temporary; Windows moves without replacing.
+     * With durable the contents are synced (fsync/_commit; MOVEFILE_WRITE_THROUGH) first.
+     * @throws Stop `write`, `sync`, `close` or `publish` (status Failed); the destructor then
+     * removes the temporary and any existing target is left as it was.
+     */
     void commit()
     {
         if (std::fflush(file_) != 0)
@@ -132,6 +173,12 @@ public:
         temp_.clear();
     }
 };
+/**
+ * @brief Buffered little-endian binary writer with a running FNV-1a hash and byte count.
+ *
+ * Uses a 64 KiB buffer. The destructor does not flush: call flush() before committing, or
+ * buffered bytes are lost.
+ */
 class Output
 {
     std::FILE *file_;
@@ -140,8 +187,20 @@ class Output
     std::size_t used_ = 0;
 
 public:
+    /// Bytes accepted by raw(), hashed or not.
     std::uint64_t bytes = 0, hash = hashSeed;
+    /** @var hash
+     *  @brief FNV-1a hash of the bytes written with hashed true, starting at hashSeed. */
+    /**
+     * @brief Bind the destination and work budget.
+     * @param[in] file Borrowed open stream; not closed by this object.
+     * @param[in] work Borrowed budget polled for cancellation on each flush; must outlive this.
+     */
     Output(std::FILE *file, Work &work) : file_(file), work_(work) {}
+    /**
+     * @brief Poll cancellation, then write out the buffered bytes.
+     * @throws Stop `cancelled`, or `write` (status Failed) on a short write.
+     */
     void flush()
     {
         work_.check();
@@ -149,6 +208,13 @@ public:
             fail("write", "Output write failed.", RunStatus::Failed);
         used_ = 0;
     }
+    /**
+     * @brief Append bytes, flushing whenever the buffer fills.
+     * @param[in] data Borrowed bytes; may be null only when n is 0.
+     * @param[in] n Number of bytes.
+     * @param[in] hashed Whether the bytes enter #hash.
+     * @throws Stop from flush().
+     */
     void raw(const void *data, std::size_t n, bool hashed = true)
     {
         auto p = static_cast<const unsigned char *>(data);
@@ -165,6 +231,12 @@ public:
                 flush();
         }
     }
+    /**
+     * @brief Append the low bytes of an unsigned value, least significant first.
+     * @param[in] value Value to write; bits above width bytes are dropped.
+     * @param[in] width Byte count, 0 to 8 (unchecked).
+     * @param[in] hashed Whether the bytes enter #hash.
+     */
     void number(std::uint64_t value, int width, bool hashed = true)
     {
         unsigned char data[8];
@@ -174,6 +246,10 @@ public:
         }
         raw(data, width, hashed);
     }
+    /**
+     * @brief Append a double's 8-byte bit pattern, little-endian and hashed.
+     * @param[in] value Value to write, NaN payloads and signed zero included.
+     */
     void real(double value)
     {
         std::uint64_t bits;
@@ -181,12 +257,21 @@ public:
         std::memcpy(&bits, &value, 8);
         number(bits, 8);
     }
+    /**
+     * @brief Append a counted string: its uint64 byte length, then its bytes, both hashed.
+     * @param[in] s Bytes to write; UTF-8 is not checked here.
+     */
     void text(const std::string &s)
     {
         number(s.size(), 8);
         raw(s.data(), s.size());
     }
 };
+/**
+ * @brief Buffered little-endian binary reader with a running FNV-1a hash and byte count.
+ *
+ * Reads the stream in 64 KiB blocks, so it may consume bytes beyond those decoded.
+ */
 class Input
 {
     std::istream &stream_;
@@ -195,8 +280,24 @@ class Input
     std::size_t at_ = 0, end_ = 0;
 
 public:
+    /// Bytes consumed through byte(), hashed or not.
     std::uint64_t bytes = 0, hash = hashSeed;
+    /** @var hash
+     *  @brief FNV-1a hash of the bytes read with hashed true, starting at hashSeed. */
+    /**
+     * @brief Bind the source and work budget.
+     * @param[in] stream Borrowed binary stream; must outlive this object.
+     * @param[in] work Borrowed budget polled for cancellation before each block read; must
+     * outlive this object.
+     */
     Input(std::istream &stream, Work &work) : stream_(stream), work_(work) {}
+    /**
+     * @brief Read one byte, refilling the buffer when it is empty.
+     * @param[out] value Receives the byte; unchanged at end of stream.
+     * @param[in] hashed Whether the byte enters #hash.
+     * @return False at end of stream.
+     * @throws Stop `cancelled`, or `read` (status Failed) when the stream reports a read error.
+     */
     bool byte(unsigned char &value, bool hashed = true)
     {
         if (at_ == end_) {
@@ -216,6 +317,13 @@ public:
             hashBytes(hash, &value, 1);
         return true;
     }
+    /**
+     * @brief Read exactly n bytes.
+     * @param[out] target Borrowed buffer of at least n bytes.
+     * @param[in] n Number of bytes.
+     * @param[in] hashed Whether the bytes enter #hash.
+     * @throws Stop `truncated` (status Failed) when the stream ends first, or from byte().
+     */
     void raw(void *target, std::size_t n, bool hashed = true)
     {
         auto p = static_cast<unsigned char *>(target);
@@ -223,6 +331,13 @@ public:
             if (!byte(p[i], hashed))
                 fail("truncated", "Truncated input.", RunStatus::Failed);
     }
+    /**
+     * @brief Read a little-endian unsigned value of width bytes.
+     * @param[in] width Byte count, 0 to 8 (unchecked).
+     * @param[in] hashed Whether the bytes enter #hash.
+     * @return The zero-extended value.
+     * @throws Stop from raw().
+     */
     std::uint64_t number(int width, bool hashed = true)
     {
         unsigned char data[8];
@@ -232,6 +347,11 @@ public:
             value |= std::uint64_t(data[i]) << (8 * i);
         return value;
     }
+    /**
+     * @brief Read 8 hashed bytes as a little-endian double bit pattern.
+     * @return The double, which may be NaN or infinite; not validated here.
+     * @throws Stop from raw().
+     */
     double real()
     {
         const auto bits = number(8);
@@ -239,6 +359,13 @@ public:
         std::memcpy(&value, &bits, 8);
         return value;
     }
+    /**
+     * @brief Read a counted string (uint64 byte length, then bytes), charging a byte budget.
+     * @param[in,out] remaining Metadata bytes still allowed; reduced by the string length.
+     * @return The bytes; UTF-8 is not checked here.
+     * @throws Stop `metadata_limit` (status ResourceLimit) when the length exceeds remaining,
+     * or from raw().
+     */
     std::string text(std::uint64_t &remaining)
     {
         auto n = number(8);
@@ -250,6 +377,15 @@ public:
         return result;
     }
 };
+/**
+ * @brief Append one external id to a sparse id array that stays empty while ids are 1, 2, ...
+ *
+ * The first id that differs from index + 1 materializes the implicit ids 1..index; every later
+ * call then appends.
+ * @param[in,out] values Id array; empty means sequential one-based ids.
+ * @param[in] id External id of record index.
+ * @param[in] index Zero-based record number; calls must arrive in order 0, 1, 2, ...
+ */
 inline void appendId(std::vector<std::int64_t> &values, std::int64_t id, std::size_t index)
 {
     if (values.empty() && id == std::int64_t(index + 1))
@@ -261,6 +397,14 @@ inline void appendId(std::vector<std::int64_t> &values, std::int64_t id, std::si
     }
     values.push_back(id);
 }
+/**
+ * @brief Append one marker to a sparse marker array that stays empty while markers are 0.
+ *
+ * The first nonzero marker materializes index zeros; every later call then appends.
+ * @param[in,out] values Marker array; empty means all zero.
+ * @param[in] marker Marker of record index.
+ * @param[in] index Zero-based record number; calls must arrive in order 0, 1, 2, ...
+ */
 inline void appendMarker(std::vector<std::int32_t> &values, std::int32_t marker, std::size_t index)
 {
     if (!marker && values.empty())
@@ -269,16 +413,32 @@ inline void appendMarker(std::vector<std::int32_t> &values, std::int32_t marker,
         values.resize(index, 0);
     values.push_back(marker);
 }
+/**
+ * @brief External id of a record from a possibly empty sparse id array.
+ * @param[in] ids Id array; empty means sequential one-based ids.
+ * @param[in] index Zero-based record number; must be in range when ids is non-empty.
+ * @return index + 1 when ids is empty, otherwise ids[index].
+ */
 inline std::int64_t externalId(const std::vector<std::int64_t> &ids, std::size_t index)
 {
     return ids.empty() ? std::int64_t(index + 1) : ids[index];
 }
+/**
+ * @brief Reinterpret a 64-bit pattern as a two's-complement signed value.
+ * @param[in] bits Bit pattern as read from a file.
+ * @return The signed value with the same bits.
+ */
 inline std::int64_t signed64(std::uint64_t bits)
 {
     std::int64_t value;
     std::memcpy(&value, &bits, 8);
     return value;
 }
+/**
+ * @brief Reinterpret the low 32 bits of a pattern as a two's-complement signed value.
+ * @param[in] bits Bit pattern as read from a file; higher bits are ignored.
+ * @return The signed 32-bit value with the same low bits.
+ */
 inline std::int32_t signed32(std::uint64_t bits)
 {
     std::uint32_t raw = std::uint32_t(bits);
@@ -286,24 +446,45 @@ inline std::int32_t signed32(std::uint64_t bits)
     std::memcpy(&value, &raw, 4);
     return value;
 }
+/**
+ * @brief Copy a caught Stop into a report.
+ * @param[in,out] r Report whose status, code and message are overwritten.
+ * @param[in] e Caught failure.
+ */
 inline void setError(IOReport &r, const Stop &e)
 {
     r.status = e.status;
     r.code = e.code;
     r.message = e.message;
 }
+/**
+ * @brief Record an allocation failure: status ResourceLimit, code `allocation`.
+ * @param[in,out] r Report whose status, code and message are overwritten.
+ */
 inline void setException(IOReport &r, const std::bad_alloc &)
 {
     r.status = RunStatus::ResourceLimit;
     r.code = "allocation";
     r.message = "Insufficient memory.";
 }
+/**
+ * @brief Record any other standard exception: status Failed, code `exception`.
+ * @param[in,out] r Report whose status, code and message are overwritten.
+ * @param[in] e Caught exception; its what() text becomes the message.
+ */
 inline void setException(IOReport &r, const std::exception &e)
 {
     r.status = RunStatus::Failed;
     r.code = "exception";
     r.message = e.what();
 }
+/**
+ * @brief Run validateMesh() with the options' limits and cancellation poll.
+ * @param[in] mesh Borrowed mesh, unchanged.
+ * @param[in] o Supplies limits and cancelled.
+ * @throws Stop carrying the validation report's code, message and status when it is not
+ * complete.
+ */
 inline void validated(const Mesh &mesh, const IOOptions &o)
 {
     const auto r = validateMesh(mesh, o.limits, o.cancelled);

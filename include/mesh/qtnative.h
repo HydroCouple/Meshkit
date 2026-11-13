@@ -12,35 +12,89 @@
 #include "meshkit/sizefield.hpp"
 namespace mesh::native_adapter
 {
+// Short alias for meshkit::plan, the namespace of the standard-container types.
 namespace n = meshkit::plan;
+/** @brief Copy the x and y of a QPointF into a meshkit::Point2. */
 inline meshkit::Point2 native(QPointF p)
 {
     return {p.x(), p.y()};
 }
+/** @brief Copy the x and y of a meshkit::Point2 into a QPointF. */
 inline QPointF qt(meshkit::Point2 p)
 {
     return {p.x(), p.y()};
 }
+/**
+ * @brief Convert a QRectF to a meshkit::Box2 spanning the same two corners.
+ *
+ * (left(), top()) becomes the box origin and (right(), bottom()) its opposite corner, with no
+ * y-axis flip and no normalization, so a negative width or height is kept. The size is recomputed
+ * from the corners and can differ from the source by rounding.
+ * @param[in] b Rectangle to convert.
+ * @return The box.
+ */
 inline meshkit::Box2 native(QRectF b)
 {
     return {{b.left(), b.top()}, {b.right(), b.bottom()}};
 }
+/**
+ * @brief Convert a meshkit::Box2 to a QRectF spanning the same two corners.
+ *
+ * Inverse of native(QRectF): (left(), top()) and (right(), bottom()) become the rectangle's corners
+ * without normalization, and the size is recomputed from them.
+ * @param[in] b Box to convert.
+ * @return The rectangle.
+ */
 inline QRectF qt(meshkit::Box2 b)
 {
     return QRectF(QPointF(b.left(), b.top()), QPointF(b.right(), b.bottom()));
 }
+/**
+ * @brief Convert a QString to meshkit::plan::Text holding its UTF-8 encoding.
+ * @param[in] s String to convert.
+ * @return The UTF-8 bytes of @p s (QString::toStdString()).
+ */
 inline n::Text native(const QString &s)
 {
     return s.toStdString();
 }
+/**
+ * @brief Convert meshkit::plan::Text to a QString by decoding its bytes as UTF-8.
+ *
+ * Uses QString::fromStdString(). Byte sequences that are not valid UTF-8 are replaced by the
+ * decoder, so Text survives a qt() and native() round trip only when it is valid UTF-8.
+ * @param[in] s Text to convert.
+ * @return The decoded string.
+ */
 inline QString qt(const n::Text &s)
 {
     return QString::fromStdString(s);
 }
+/**
+ * @brief Fallback that returns a value unchanged, for members whose type needs no conversion.
+ *
+ * Overload resolution prefers the specific overloads and the QVector template, so this handles
+ * arithmetic values, bool, std::optional, std::function and std::pair members. Same-width integer
+ * types with different names (quint64 and std::uint64_t, qsizetype and std::ptrdiff_t) convert
+ * implicitly where the result is assigned.
+ * @tparam T Type of the value.
+ * @param[in] v Value to return.
+ * @return A copy of @p v.
+ */
 template <class T> T native(T v)
 {
     return v;
 }
+/**
+ * @brief Fallback that returns a value unchanged, for members whose type needs no conversion.
+ *
+ * Mirror of the native() fallback: overload resolution prefers the specific overloads and the
+ * meshkit::plan::Vector template, so this handles arithmetic values, bool, std::optional,
+ * std::function and std::pair members.
+ * @tparam T Type of the value.
+ * @param[in] v Value to return.
+ * @return A copy of @p v.
+ */
 template <class T> T qt(T v)
 {
     return v;
@@ -95,6 +149,14 @@ inline n::QuadBlockGrid native(const QuadBlockGrid &);
 inline QuadBlockGrid qt(const n::QuadBlockGrid &);
 inline n::QuadBlockOptions native(const QuadBlockOptions &);
 inline QuadBlockOptions qt(const n::QuadBlockOptions &);
+/**
+ * @brief Convert a MeshTriangle to the native cell, keeping its corners and tag.
+ *
+ * The Qt-only cell attributes (mannings, initDepth, initHgl, initU, initV) have no native
+ * counterpart and are dropped.
+ * @param[in] v Cell to convert.
+ * @return Native cell with the same v0..v3 and the tag as UTF-8 Text.
+ */
 inline n::MeshTriangle native(const MeshTriangle &v)
 {
     n::MeshTriangle out;
@@ -105,6 +167,14 @@ inline n::MeshTriangle native(const MeshTriangle &v)
     out.tag = native(v.tag);
     return out;
 }
+/**
+ * @brief Convert a native cell to a MeshTriangle, copying its corners and tag.
+ *
+ * The Qt-only attributes keep their defaults: mannings, initDepth and initHgl are NaN (unset) and
+ * initU and initV are 0, so a Qt to native to Qt round trip loses any values set on them.
+ * @param[in] v Cell to convert.
+ * @return The Qt cell.
+ */
 inline MeshTriangle qt(const n::MeshTriangle &v)
 {
     MeshTriangle out;
@@ -117,6 +187,17 @@ inline MeshTriangle qt(const n::MeshTriangle &v)
 }
 inline n::Polygon native(const QPolygonF &);
 inline QPolygonF qt(const n::Polygon &);
+/**
+ * @brief Convert a QVector element by element with the native() overload for its element type.
+ *
+ * Nested QVectors convert recursively and QPolygonF elements become meshkit::plan::Polygon. Only
+ * overloads declared before this template are visible to it, which is why the struct conversions
+ * are forward-declared above.
+ * @tparam T Qt element type. It must be default-constructible, because the native element type is
+ * deduced from native(T{}).
+ * @param[in] v Vector to convert; each element is copied.
+ * @return meshkit::plan::Vector of the converted elements, in the same order.
+ */
 template <class T> auto native(const QVector<T> &v)
 {
     n::Vector<decltype(native(T{}))> out;
@@ -127,6 +208,17 @@ template <class T> auto native(const QVector<T> &v)
     }
     return out;
 }
+/**
+ * @brief Convert a meshkit::plan::Vector element by element with the qt() overload for its element
+ * type.
+ *
+ * Nested vectors convert recursively and meshkit::plan::Polygon elements become QPolygonF. As for
+ * the native() template, only overloads declared before this template are visible to it.
+ * @tparam T Native element type. It must be default-constructible, because the Qt element type is
+ * deduced from qt(T{}).
+ * @param[in] v Vector to convert; each element is copied.
+ * @return QVector of the converted elements, in the same order.
+ */
 template <class T> auto qt(const n::Vector<T> &v)
 {
     QVector<decltype(qt(T{}))> out;
@@ -137,6 +229,14 @@ template <class T> auto qt(const n::Vector<T> &v)
     }
     return out;
 }
+/**
+ * @brief Copy the points of a QPolygonF, in order, into a meshkit::plan::Polygon.
+ *
+ * Points are copied as given: a repeated closing point is kept and nothing is reoriented or
+ * deduplicated.
+ * @param[in] v Polygon to convert.
+ * @return The native polygon.
+ */
 inline n::Polygon native(const QPolygonF &v)
 {
     n::Polygon out;
@@ -145,42 +245,70 @@ inline n::Polygon native(const QPolygonF &v)
         out.append(native(p));
     return out;
 }
+/** @brief Copy the points of a meshkit::plan::Polygon, in order, into a QPolygonF. */
 inline QPolygonF qt(const n::Polygon &v)
 {
     return QPolygonF(qt(static_cast<const n::Vector<meshkit::Point2> &>(v)));
 }
+/** @brief Cast to meshkit::plan::QuadRegionMode, whose enumerators match in name and order. */
 inline n::QuadRegionMode native(QuadRegionMode v)
 {
     return static_cast<n::QuadRegionMode>(v);
 }
+/** @brief Cast to QuadRegionMode, whose enumerators match the native enum in name and order. */
 inline QuadRegionMode qt(n::QuadRegionMode v)
 {
     return static_cast<QuadRegionMode>(v);
 }
+/** @brief Cast to meshkit::plan::PatchDisposition, whose enumerators match in name and order. */
 inline n::PatchDisposition native(PatchDisposition v)
 {
     return static_cast<n::PatchDisposition>(v);
 }
+/** @brief Cast to PatchDisposition, whose enumerators match the native enum in name and order. */
 inline PatchDisposition qt(n::PatchDisposition v)
 {
     return static_cast<PatchDisposition>(v);
 }
+/**
+ * @brief Cast to meshkit::plan::ConstraintSimplificationPolicy::Mode, whose enumerators match in
+ * name and order.
+ */
 inline n::ConstraintSimplificationPolicy::Mode native(ConstraintSimplificationPolicy::Mode v)
 {
     return static_cast<n::ConstraintSimplificationPolicy::Mode>(v);
 }
+/**
+ * @brief Cast to ConstraintSimplificationPolicy::Mode, whose enumerators match the native enum in
+ * name and order.
+ */
 inline ConstraintSimplificationPolicy::Mode qt(n::ConstraintSimplificationPolicy::Mode v)
 {
     return static_cast<ConstraintSimplificationPolicy::Mode>(v);
 }
+/**
+ * @brief Cast to meshkit::plan::SimplificationFeature::Role, whose enumerators match in name and
+ * order.
+ */
 inline n::SimplificationFeature::Role native(SimplificationFeature::Role v)
 {
     return static_cast<n::SimplificationFeature::Role>(v);
 }
+/**
+ * @brief Cast to SimplificationFeature::Role, whose enumerators match the native enum in name and
+ * order.
+ */
 inline SimplificationFeature::Role qt(n::SimplificationFeature::Role v)
 {
     return static_cast<SimplificationFeature::Role>(v);
 }
+/**
+ * @brief Copy every field of a QuadRegion into a meshkit::plan::QuadRegion.
+ *
+ * meshkit::plan::QuadRegion::attribute, which has no Qt counterpart, is left at 0.
+ * @param[in] v Region to convert.
+ * @return The native region.
+ */
 inline n::QuadRegion native(const QuadRegion &v)
 {
     n::QuadRegion out;
@@ -203,6 +331,9 @@ inline n::QuadRegion native(const QuadRegion &v)
     out.tag = native(v.tag);
     return out;
 }
+/**
+ * @brief Copy a meshkit::plan::QuadRegion into a QuadRegion; the native-only attribute is dropped.
+ */
 inline QuadRegion qt(const n::QuadRegion &v)
 {
     QuadRegion out;
@@ -225,6 +356,7 @@ inline QuadRegion qt(const n::QuadRegion &v)
     out.tag = qt(v.tag);
     return out;
 }
+/** @brief Copy every field of a StructuredPatch into a meshkit::plan::StructuredPatch. */
 inline n::StructuredPatch native(const StructuredPatch &v)
 {
     n::StructuredPatch out;
@@ -234,6 +366,7 @@ inline n::StructuredPatch native(const StructuredPatch &v)
     out.tag = native(v.tag);
     return out;
 }
+/** @brief Copy every field of a meshkit::plan::StructuredPatch into a StructuredPatch. */
 inline StructuredPatch qt(const n::StructuredPatch &v)
 {
     StructuredPatch out;
@@ -243,6 +376,7 @@ inline StructuredPatch qt(const n::StructuredPatch &v)
     out.tag = qt(v.tag);
     return out;
 }
+/** @brief Copy every field of a SweptPatch into a meshkit::plan::SweptPatch. */
 inline n::SweptPatch native(const SweptPatch &v)
 {
     n::SweptPatch out;
@@ -253,6 +387,7 @@ inline n::SweptPatch native(const SweptPatch &v)
     out.tag = native(v.tag);
     return out;
 }
+/** @brief Copy every field of a meshkit::plan::SweptPatch into a SweptPatch. */
 inline SweptPatch qt(const n::SweptPatch &v)
 {
     SweptPatch out;
@@ -263,6 +398,7 @@ inline SweptPatch qt(const n::SweptPatch &v)
     out.tag = qt(v.tag);
     return out;
 }
+/** @brief Copy every field of a BankPairPatch into a meshkit::plan::BankPairPatch. */
 inline n::BankPairPatch native(const BankPairPatch &v)
 {
     n::BankPairPatch out;
@@ -273,6 +409,7 @@ inline n::BankPairPatch native(const BankPairPatch &v)
     out.tag = native(v.tag);
     return out;
 }
+/** @brief Copy every field of a meshkit::plan::BankPairPatch into a BankPairPatch. */
 inline BankPairPatch qt(const n::BankPairPatch &v)
 {
     BankPairPatch out;
@@ -283,6 +420,7 @@ inline BankPairPatch qt(const n::BankPairPatch &v)
     out.tag = qt(v.tag);
     return out;
 }
+/** @brief Copy every field of a PatchLine into a meshkit::plan::PatchLine. */
 inline n::PatchLine native(const PatchLine &v)
 {
     n::PatchLine out;
@@ -291,6 +429,7 @@ inline n::PatchLine native(const PatchLine &v)
     out.tag = native(v.tag);
     return out;
 }
+/** @brief Copy every field of a meshkit::plan::PatchLine into a PatchLine. */
 inline PatchLine qt(const n::PatchLine &v)
 {
     PatchLine out;
@@ -299,6 +438,13 @@ inline PatchLine qt(const n::PatchLine &v)
     out.tag = qt(v.tag);
     return out;
 }
+/**
+ * @brief Copy every field of a PatchMesh into a meshkit::plan::PatchMesh.
+ *
+ * Each quad goes through native(const MeshTriangle &), which drops the Qt-only cell attributes.
+ * @param[in] v Patch to convert.
+ * @return The native patch.
+ */
 inline n::PatchMesh native(const PatchMesh &v)
 {
     n::PatchMesh out;
@@ -309,6 +455,14 @@ inline n::PatchMesh native(const PatchMesh &v)
     out.lines = native(v.lines);
     return out;
 }
+/**
+ * @brief Copy every field of a meshkit::plan::PatchMesh into a PatchMesh.
+ *
+ * Each quad goes through qt(const n::MeshTriangle &), so its Qt-only cell attributes take their
+ * defaults.
+ * @param[in] v Patch to convert.
+ * @return The Qt patch.
+ */
 inline PatchMesh qt(const n::PatchMesh &v)
 {
     PatchMesh out;
@@ -319,6 +473,7 @@ inline PatchMesh qt(const n::PatchMesh &v)
     out.lines = qt(v.lines);
     return out;
 }
+/** @brief Copy every field of a ConstraintSegment into a meshkit::plan::ConstraintSegment. */
 inline n::ConstraintSegment native(const ConstraintSegment &v)
 {
     n::ConstraintSegment out;
@@ -328,6 +483,7 @@ inline n::ConstraintSegment native(const ConstraintSegment &v)
     out.stripWidth = native(v.stripWidth);
     return out;
 }
+/** @brief Copy every field of a meshkit::plan::ConstraintSegment into a ConstraintSegment. */
 inline ConstraintSegment qt(const n::ConstraintSegment &v)
 {
     ConstraintSegment out;
@@ -337,6 +493,7 @@ inline ConstraintSegment qt(const n::ConstraintSegment &v)
     out.stripWidth = qt(v.stripWidth);
     return out;
 }
+/** @brief Copy every field of a SteinerPoint into a meshkit::plan::SteinerPoint. */
 inline n::SteinerPoint native(const SteinerPoint &v)
 {
     n::SteinerPoint out;
@@ -347,6 +504,7 @@ inline n::SteinerPoint native(const SteinerPoint &v)
     out.hasZ = native(v.hasZ);
     return out;
 }
+/** @brief Copy every field of a meshkit::plan::SteinerPoint into a SteinerPoint. */
 inline SteinerPoint qt(const n::SteinerPoint &v)
 {
     SteinerPoint out;
@@ -357,6 +515,10 @@ inline SteinerPoint qt(const n::SteinerPoint &v)
     out.hasZ = qt(v.hasZ);
     return out;
 }
+/**
+ * @brief Copy every field of a ConstraintSimplificationPolicy into a
+ * meshkit::plan::ConstraintSimplificationPolicy.
+ */
 inline n::ConstraintSimplificationPolicy native(const ConstraintSimplificationPolicy &v)
 {
     n::ConstraintSimplificationPolicy out;
@@ -369,6 +531,10 @@ inline n::ConstraintSimplificationPolicy native(const ConstraintSimplificationPo
     out.minimumClearance = native(v.minimumClearance);
     return out;
 }
+/**
+ * @brief Copy every field of a meshkit::plan::ConstraintSimplificationPolicy into a
+ * ConstraintSimplificationPolicy.
+ */
 inline ConstraintSimplificationPolicy qt(const n::ConstraintSimplificationPolicy &v)
 {
     ConstraintSimplificationPolicy out;
@@ -381,6 +547,10 @@ inline ConstraintSimplificationPolicy qt(const n::ConstraintSimplificationPolicy
     out.minimumClearance = qt(v.minimumClearance);
     return out;
 }
+/**
+ * @brief Copy every field of a ConstraintPolicyOverride into a
+ * meshkit::plan::ConstraintPolicyOverride.
+ */
 inline n::ConstraintPolicyOverride native(const ConstraintPolicyOverride &v)
 {
     n::ConstraintPolicyOverride out;
@@ -392,6 +562,10 @@ inline n::ConstraintPolicyOverride native(const ConstraintPolicyOverride &v)
     out.minimumClearance = native(v.minimumClearance);
     return out;
 }
+/**
+ * @brief Copy every field of a meshkit::plan::ConstraintPolicyOverride into a
+ * ConstraintPolicyOverride.
+ */
 inline ConstraintPolicyOverride qt(const n::ConstraintPolicyOverride &v)
 {
     ConstraintPolicyOverride out;
@@ -403,6 +577,9 @@ inline ConstraintPolicyOverride qt(const n::ConstraintPolicyOverride &v)
     out.minimumClearance = qt(v.minimumClearance);
     return out;
 }
+/**
+ * @brief Copy every field of a SimplificationFeature into a meshkit::plan::SimplificationFeature.
+ */
 inline n::SimplificationFeature native(const SimplificationFeature &v)
 {
     n::SimplificationFeature out;
@@ -418,6 +595,9 @@ inline n::SimplificationFeature native(const SimplificationFeature &v)
     out.label = native(v.label);
     return out;
 }
+/**
+ * @brief Copy every field of a meshkit::plan::SimplificationFeature into a SimplificationFeature.
+ */
 inline SimplificationFeature qt(const n::SimplificationFeature &v)
 {
     SimplificationFeature out;
@@ -433,6 +613,7 @@ inline SimplificationFeature qt(const n::SimplificationFeature &v)
     out.label = qt(v.label);
     return out;
 }
+/** @brief Copy every field of a SimplificationChange into a meshkit::plan::SimplificationChange. */
 inline n::SimplificationChange native(const SimplificationChange &v)
 {
     n::SimplificationChange out;
@@ -447,6 +628,7 @@ inline n::SimplificationChange native(const SimplificationChange &v)
     out.sourceVertices = native(v.sourceVertices);
     return out;
 }
+/** @brief Copy every field of a meshkit::plan::SimplificationChange into a SimplificationChange. */
 inline SimplificationChange qt(const n::SimplificationChange &v)
 {
     SimplificationChange out;
@@ -461,6 +643,10 @@ inline SimplificationChange qt(const n::SimplificationChange &v)
     out.sourceVertices = qt(v.sourceVertices);
     return out;
 }
+/**
+ * @brief Copy every field of a ConstraintSimplificationOptions into a
+ * meshkit::plan::ConstraintSimplificationOptions.
+ */
 inline n::ConstraintSimplificationOptions native(const ConstraintSimplificationOptions &v)
 {
     n::ConstraintSimplificationOptions out;
@@ -471,6 +657,10 @@ inline n::ConstraintSimplificationOptions native(const ConstraintSimplificationO
     out.canonicalizeSharedEdges = native(v.canonicalizeSharedEdges);
     return out;
 }
+/**
+ * @brief Copy every field of a meshkit::plan::ConstraintSimplificationOptions into a
+ * ConstraintSimplificationOptions.
+ */
 inline ConstraintSimplificationOptions qt(const n::ConstraintSimplificationOptions &v)
 {
     ConstraintSimplificationOptions out;
@@ -481,6 +671,10 @@ inline ConstraintSimplificationOptions qt(const n::ConstraintSimplificationOptio
     out.canonicalizeSharedEdges = qt(v.canonicalizeSharedEdges);
     return out;
 }
+/**
+ * @brief Copy every field of a ConstraintSimplificationResult into a
+ * meshkit::plan::ConstraintSimplificationResult.
+ */
 inline n::ConstraintSimplificationResult native(const ConstraintSimplificationResult &v)
 {
     n::ConstraintSimplificationResult out;
@@ -494,6 +688,10 @@ inline n::ConstraintSimplificationResult native(const ConstraintSimplificationRe
     out.workUsed = native(v.workUsed);
     return out;
 }
+/**
+ * @brief Copy every field of a meshkit::plan::ConstraintSimplificationResult into a
+ * ConstraintSimplificationResult.
+ */
 inline ConstraintSimplificationResult qt(const n::ConstraintSimplificationResult &v)
 {
     ConstraintSimplificationResult out;
@@ -507,6 +705,9 @@ inline ConstraintSimplificationResult qt(const n::ConstraintSimplificationResult
     out.workUsed = qt(v.workUsed);
     return out;
 }
+/**
+ * @brief Copy every field of a ConstraintAuditOptions into a meshkit::plan::ConstraintAuditOptions.
+ */
 inline n::ConstraintAuditOptions native(const ConstraintAuditOptions &v)
 {
     n::ConstraintAuditOptions out;
@@ -517,6 +718,9 @@ inline n::ConstraintAuditOptions native(const ConstraintAuditOptions &v)
     out.maximumExamples = native(v.maximumExamples);
     return out;
 }
+/**
+ * @brief Copy every field of a meshkit::plan::ConstraintAuditOptions into a ConstraintAuditOptions.
+ */
 inline ConstraintAuditOptions qt(const n::ConstraintAuditOptions &v)
 {
     ConstraintAuditOptions out;
@@ -527,6 +731,9 @@ inline ConstraintAuditOptions qt(const n::ConstraintAuditOptions &v)
     out.maximumExamples = qt(v.maximumExamples);
     return out;
 }
+/**
+ * @brief Copy every field of a ConstraintAuditExample into a meshkit::plan::ConstraintAuditExample.
+ */
 inline n::ConstraintAuditExample native(const ConstraintAuditExample &v)
 {
     n::ConstraintAuditExample out;
@@ -535,6 +742,9 @@ inline n::ConstraintAuditExample native(const ConstraintAuditExample &v)
     out.segment = native(v.segment);
     return out;
 }
+/**
+ * @brief Copy every field of a meshkit::plan::ConstraintAuditExample into a ConstraintAuditExample.
+ */
 inline ConstraintAuditExample qt(const n::ConstraintAuditExample &v)
 {
     ConstraintAuditExample out;
@@ -543,6 +753,9 @@ inline ConstraintAuditExample qt(const n::ConstraintAuditExample &v)
     out.segment = qt(v.segment);
     return out;
 }
+/**
+ * @brief Copy every field of a ConstraintAuditReport into a meshkit::plan::ConstraintAuditReport.
+ */
 inline n::ConstraintAuditReport native(const ConstraintAuditReport &v)
 {
     n::ConstraintAuditReport out;
@@ -563,6 +776,9 @@ inline n::ConstraintAuditReport native(const ConstraintAuditReport &v)
     out.examples = native(v.examples);
     return out;
 }
+/**
+ * @brief Copy every field of a meshkit::plan::ConstraintAuditReport into a ConstraintAuditReport.
+ */
 inline ConstraintAuditReport qt(const n::ConstraintAuditReport &v)
 {
     ConstraintAuditReport out;
@@ -583,6 +799,7 @@ inline ConstraintAuditReport qt(const n::ConstraintAuditReport &v)
     out.examples = qt(v.examples);
     return out;
 }
+/** @brief Copy every field of a PatchDecision into a meshkit::plan::PatchDecision. */
 inline n::PatchDecision native(const PatchDecision &v)
 {
     n::PatchDecision out;
@@ -595,6 +812,7 @@ inline n::PatchDecision native(const PatchDecision &v)
     out.repairRounds = native(v.repairRounds);
     return out;
 }
+/** @brief Copy every field of a meshkit::plan::PatchDecision into a PatchDecision. */
 inline PatchDecision qt(const n::PatchDecision &v)
 {
     PatchDecision out;
@@ -607,6 +825,7 @@ inline PatchDecision qt(const n::PatchDecision &v)
     out.repairRounds = qt(v.repairRounds);
     return out;
 }
+/** @brief Copy every field of a PatchAssessment into a meshkit::plan::PatchAssessment. */
 inline n::PatchAssessment native(const PatchAssessment &v)
 {
     n::PatchAssessment out;
@@ -616,6 +835,7 @@ inline n::PatchAssessment native(const PatchAssessment &v)
     out.reason = native(v.reason);
     return out;
 }
+/** @brief Copy every field of a meshkit::plan::PatchAssessment into a PatchAssessment. */
 inline PatchAssessment qt(const n::PatchAssessment &v)
 {
     PatchAssessment out;
@@ -625,6 +845,9 @@ inline PatchAssessment qt(const n::PatchAssessment &v)
     out.reason = qt(v.reason);
     return out;
 }
+/**
+ * @brief Copy every field of a PatchInterfaceConflict into a meshkit::plan::PatchInterfaceConflict.
+ */
 inline n::PatchInterfaceConflict native(const PatchInterfaceConflict &v)
 {
     n::PatchInterfaceConflict out;
@@ -634,6 +857,9 @@ inline n::PatchInterfaceConflict native(const PatchInterfaceConflict &v)
     out.secondSize = native(v.secondSize);
     return out;
 }
+/**
+ * @brief Copy every field of a meshkit::plan::PatchInterfaceConflict into a PatchInterfaceConflict.
+ */
 inline PatchInterfaceConflict qt(const n::PatchInterfaceConflict &v)
 {
     PatchInterfaceConflict out;
@@ -643,6 +869,7 @@ inline PatchInterfaceConflict qt(const n::PatchInterfaceConflict &v)
     out.secondSize = qt(v.secondSize);
     return out;
 }
+/** @brief Copy every field of a PatchInterfaceReport into a meshkit::plan::PatchInterfaceReport. */
 inline n::PatchInterfaceReport native(const PatchInterfaceReport &v)
 {
     n::PatchInterfaceReport out;
@@ -655,6 +882,7 @@ inline n::PatchInterfaceReport native(const PatchInterfaceReport &v)
     out.examples = native(v.examples);
     return out;
 }
+/** @brief Copy every field of a meshkit::plan::PatchInterfaceReport into a PatchInterfaceReport. */
 inline PatchInterfaceReport qt(const n::PatchInterfaceReport &v)
 {
     PatchInterfaceReport out;
@@ -667,6 +895,7 @@ inline PatchInterfaceReport qt(const n::PatchInterfaceReport &v)
     out.examples = qt(v.examples);
     return out;
 }
+/** @brief Copy every field of a QuadPlanningGeometry into a meshkit::plan::QuadPlanningGeometry. */
 inline n::QuadPlanningGeometry native(const QuadPlanningGeometry &v)
 {
     n::QuadPlanningGeometry out;
@@ -677,6 +906,7 @@ inline n::QuadPlanningGeometry native(const QuadPlanningGeometry &v)
     out.fixedPatches = native(v.fixedPatches);
     return out;
 }
+/** @brief Copy every field of a meshkit::plan::QuadPlanningGeometry into a QuadPlanningGeometry. */
 inline QuadPlanningGeometry qt(const n::QuadPlanningGeometry &v)
 {
     QuadPlanningGeometry out;
@@ -687,6 +917,7 @@ inline QuadPlanningGeometry qt(const n::QuadPlanningGeometry &v)
     out.fixedPatches = qt(v.fixedPatches);
     return out;
 }
+/** @brief Copy every field of a QuadPlan into a meshkit::plan::QuadPlan. */
 inline n::QuadPlan native(const QuadPlan &v)
 {
     n::QuadPlan out;
@@ -702,6 +933,7 @@ inline n::QuadPlan native(const QuadPlan &v)
     out.plannedCells = native(v.plannedCells);
     return out;
 }
+/** @brief Copy every field of a meshkit::plan::QuadPlan into a QuadPlan. */
 inline QuadPlan qt(const n::QuadPlan &v)
 {
     QuadPlan out;
@@ -717,6 +949,7 @@ inline QuadPlan qt(const n::QuadPlan &v)
     out.plannedCells = qt(v.plannedCells);
     return out;
 }
+/** @brief Copy every field of a QuadBlockGrid into a meshkit::plan::QuadBlockGrid. */
 inline n::QuadBlockGrid native(const QuadBlockGrid &v)
 {
     n::QuadBlockGrid out;
@@ -727,6 +960,7 @@ inline n::QuadBlockGrid native(const QuadBlockGrid &v)
     out.h = native(v.h);
     return out;
 }
+/** @brief Copy every field of a meshkit::plan::QuadBlockGrid into a QuadBlockGrid. */
 inline QuadBlockGrid qt(const n::QuadBlockGrid &v)
 {
     QuadBlockGrid out;
@@ -737,6 +971,7 @@ inline QuadBlockGrid qt(const n::QuadBlockGrid &v)
     out.h = qt(v.h);
     return out;
 }
+/** @brief Copy every field of a QuadBlockOptions into a meshkit::plan::QuadBlockOptions. */
 inline n::QuadBlockOptions native(const QuadBlockOptions &v)
 {
     n::QuadBlockOptions out;
@@ -746,6 +981,7 @@ inline n::QuadBlockOptions native(const QuadBlockOptions &v)
     out.maxBlocks = native(v.maxBlocks);
     return out;
 }
+/** @brief Copy every field of a meshkit::plan::QuadBlockOptions into a QuadBlockOptions. */
 inline QuadBlockOptions qt(const n::QuadBlockOptions &v)
 {
     QuadBlockOptions out;
@@ -755,6 +991,19 @@ inline QuadBlockOptions qt(const n::QuadBlockOptions &v)
     out.maxBlocks = qt(v.maxBlocks);
     return out;
 }
+/**
+ * @brief View a MeshResult as a meshkit::plan::MeshResult without copying its arrays.
+ *
+ * ok and errorMsg are copied. vertices, triangles and boundaryEdges borrow the QVectors of @p m
+ * (meshkit::plan::ReadArray::borrow()) and convert one element on every access, keeping only what
+ * the native types hold: vertex xy and z; cell corners v0..v3, without the tag (unlike
+ * native(const MeshTriangle &)); edge v0, v1 and marker, without the tag. All other vertex, cell
+ * and mesh data (vertex markers, tags and coupling, Manning's n and initial conditions, cell
+ * couplings, surface and infiltration data) is not visible. There is no qt() counterpart.
+ * @param[in] m Mesh to view. It must outlive the result, and its three arrays must not change while
+ * the result is read.
+ * @return Native mesh that reads @p m's storage.
+ */
 inline n::MeshResult native(const MeshResult &m)
 {
     n::MeshResult out;
@@ -784,6 +1033,15 @@ inline n::MeshResult native(const MeshResult &m)
                              });
     return out;
 }
+/**
+ * @brief Copy SizeFieldOptions into meshkit::plan::SizeFieldOptions; one-way, with no qt()
+ * counterpart.
+ *
+ * Every field is copied: the scalars and the terrainSizeAt callback as they are, each regions and
+ * terrainRegions entry as its converted ring and h, and steps element by element.
+ * @param[in] o Options to convert.
+ * @return Native options holding copies of every field.
+ */
 inline n::SizeFieldOptions native(const SizeFieldOptions &o)
 {
     n::SizeFieldOptions out;
@@ -801,6 +1059,17 @@ inline n::SizeFieldOptions native(const SizeFieldOptions &o)
         out.terrainRegions.append({native(r.ring), r.h});
     return out;
 }
+/**
+ * @brief Convert PatchLimits to meshkit::plan::PatchLimits; one-way, with no qt() counterpart.
+ *
+ * The scalar limits and the elevationAt and cancelled callbacks are copied as they are. The
+ * Qt-typed callbacks are wrapped only when set, so an empty one stays empty: maximumSize and
+ * terrainToleranceForFootprint receive the native box converted with qt(meshkit::Box2), and
+ * terrainBound receives the three native points copied into a QPointF array that lives only for the
+ * call, with the elevation pointer passed through.
+ * @param[in] o Limits to convert.
+ * @return Native limits; each wrapper holds its own copy of the Qt callback.
+ */
 inline n::PatchLimits native(const PatchLimits &o)
 {
     n::PatchLimits out;
@@ -825,6 +1094,16 @@ inline n::PatchLimits native(const PatchLimits &o)
         };
     return out;
 }
+/**
+ * @brief Convert QuadPlanningOptions to meshkit::plan::QuadPlanningOptions; one-way, with no qt()
+ * counterpart.
+ *
+ * The flags, sizes, rounds and budgets are copied, limits goes through native(const PatchLimits &),
+ * and a set excluded callback is wrapped so that it receives each native candidate ring converted
+ * to a QPolygonF; an empty one stays empty.
+ * @param[in] o Options to convert.
+ * @return Native options; the wrapper holds its own copy of the Qt callback.
+ */
 inline n::QuadPlanningOptions native(const QuadPlanningOptions &o)
 {
     n::QuadPlanningOptions out;

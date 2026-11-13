@@ -9,6 +9,34 @@ def run(request, *, raster=None, provider_identity="", progress=None, poll_inter
     Inputs accept native float64 (N,2) buffers or point rows. Result arrays are
     owned, read-only strided buffers. NumPy is optional: np.asarray(view) shares
     storage. Polling/cancellation never call Python from a native inner loop.
+
+    Any exception raised while waiting, including :class:`KeyboardInterrupt` and
+    exceptions from ``progress``, cancels the job before it propagates.
+
+    Parameters
+    ----------
+    request : dict
+        The job description; see :ref:`requests`.
+    raster : dict, optional
+        Terrain grid; see :ref:`terrain`.
+    provider_identity : str
+        Identity of the terrain dataset and version, copied into the report.
+    progress : callable, optional
+        Called on the calling thread with each progress event; see
+        :ref:`progress-events`.
+    poll_interval : float
+        Seconds between progress polls (at least 0.001).
+
+    Returns
+    -------
+    MeshResult
+        The finished mesh. A refused job returns empty geometry; check
+        ``result.report["status"]``.
+
+    Raises
+    ------
+    ValueError
+        The request or raster is invalid.
     """
     job = start(request, raster=raster, provider_identity=provider_identity)
     try:
@@ -29,7 +57,30 @@ def run(request, *, raster=None, provider_identity="", progress=None, poll_inter
 
 
 def prepared_request(prepared, *, options=None, metadata=None, **extra):
-    """Build a request from an audited source graph without per-vertex Python rows."""
+    """Build a request from an audited source graph without per-vertex Python rows.
+
+    Parameters
+    ----------
+    prepared : dict
+        A successful result of :func:`prepare_sources`.
+    options : dict, optional
+        Job options; see :ref:`options`.
+    metadata : dict, optional
+        Units and descriptive metadata; see :ref:`requests`.
+    **extra
+        Further request keys, such as ``quad_regions``, ``size_field`` or ``labels``.
+
+    Returns
+    -------
+    dict
+        A request for :func:`start` or :func:`run` that uses the prepared points,
+        heights and paths.
+
+    Raises
+    ------
+    ValueError
+        ``prepared`` reports a failure.
+    """
     if not prepared.get("ok"):
         raise ValueError(prepared.get("error", "Source preparation failed"))
     paths = [{key: row[key] for key in ("vertices", "kind", "id", "marker", "closed")}

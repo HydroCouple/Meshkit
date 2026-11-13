@@ -1,5 +1,5 @@
 /**
- * @file      meshcdt.cpp
+ * @file      cdt_impl.hpp
  * @brief     Constrained Delaunay triangulation kernel (workplans/MESH_OVERHAUL_PLAN_2026-09-29.md
  *            Stage 4).
  * @author    Caleb Buahin <caleb.buahin@gmail.com>
@@ -28,6 +28,8 @@ namespace meshkit
 namespace cdt_detail
 {
 
+/// Once-flag for the thread-safe, one-time initialization of the robust predicates
+/// (exactinit()) before the first build or orientation test.
 inline std::once_flag gPredicatesInit;
 
 /**
@@ -117,6 +119,15 @@ template <class Point> inline double dist2(const Point &a, const Point &b)
 
 // Preserve the existing refinement coincidence rule during extraction.
 // Input build/dedup remains exact, with signed-zero normalization.
+/**
+ * @brief Whether a refinement point coincides with an existing vertex.
+ *
+ * Each coordinate pair must agree to a relative 1e-12 (absolute 1e-12 when either value is
+ * zero). Used when inserting refinement points; input deduplication stays exact.
+ * @param[in] a Existing vertex.
+ * @param[in] b Candidate point.
+ * @return True when both coordinates are that close.
+ */
 template <class Point> bool refinementCoincident(const Point &a, const Point &b)
 {
     auto close = [](double x, double y) {
@@ -126,6 +137,8 @@ template <class Point> bool refinementCoincident(const Point &a, const Point &b)
     return close(a.x(), b.x()) && close(a.y(), b.y());
 }
 
+/// Area of an equilateral triangle with unit side, √3/4: a triangle of nominal size h has area
+/// kEquilateralArea * h * h.
 constexpr double kEquilateralArea = 0.4330127018922193; // √3/4
 
 } // namespace cdt_detail

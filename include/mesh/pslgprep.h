@@ -127,6 +127,10 @@ namespace pslg
  * positive finite sizes and cumulative part counts must permit int conversion and feasible
  * output allocation. Callback must remain deterministic, not mutate the path and not retain
  * temporary evaluation state; exceptions propagate, no callback reference is retained.
+ * @param[in] canonicalSegments When true, each segment is resampled from its lower endpoint
+ * (smaller x, then smaller y) and the inserted points are put back in path order, so a segment
+ * shared by two paths that run in opposite directions receives identical inserted points.
+ * False (default) resamples in path direction.
  * @return Owned resampled path, unchanged for <2 points/no callback or segments with no finite
  * initial size source. Midpoint integration uses up to 65536 samples per pass, one optional
  * finer resampling, then ceil(integral-1e-9) parts. This sampled rule can miss a narrow size
@@ -486,6 +490,8 @@ private:
      * @param[in] ring Borrowed finite polygon points in index units, unchanged. Rings with fewer
      * than three input points are skipped; exact repeated closing duplicate is excluded before
      * adding last-to-first edge.
+     * @param[in] owner Ring identifier stored with each edge, so crossings are counted per ring;
+     * the constructor uses i + 1 for domain i and -(i + 1) for hole i.
      * @note Requires existing positive band count/height and finite representable band indices.
      * Adds owned edge copies and clamped y-band references, allocates storage, does not expand
      * domain bounds or validate polygon topology. Caller excludes concurrent reads/mutation; no

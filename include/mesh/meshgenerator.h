@@ -54,7 +54,9 @@ struct ConstraintSegment {
     QVector<QPointF> path; ///< >= 2 points; consecutive pairs become constrained edges.
     int marker = 0;        ///< Preserved on output edges.
     QString tag;           ///< Resolved later via the marker→tag lookup the caller maintains.
-    /*! > 0: a swept quad strip this wide follows the (open) line — a conduit
+    /*! @brief Width of a swept quad strip along the line; 0 (default) = no strip.
+     *
+     *  When > 0: a swept quad strip this wide follows the (open) line — a conduit
      *  — with the line along its middle row, cut back one width from each end
      *  so strips never meet at a junction. The line keeps its marker on every
      *  edge, inside the strip or not. A strip that does not fit is dropped
@@ -64,7 +66,7 @@ struct ConstraintSegment {
 
 /*! \brief A point that must appear as a vertex in the output mesh. */
 struct SteinerPoint {
-    QPointF xy;
+    QPointF xy; ///< Location in the mesh XY frame; must be finite or generate() fails.
     int marker = 0;    ///< Carries a tag id; resolved via marker→tag map.
     QString tag;       ///< Convenience copy (caller can resolve via marker, but stash here too).
     double z = 0.0;    ///< Pre-sampled elevation when hasZ is true (e.g. from DTM thinner).
@@ -97,6 +99,9 @@ struct RefineHook {
     /*! Legacy callback: allocated vertex slots, including super/unused vertices;
      * this is NOT a cell count. Prefer onDetailedProgress. */
     std::function<void(qint64 count)> onProgress;
+    /*! Typed progress at bounded checkpoints of quality refinement, called synchronously on
+     *  the generating thread with GenerationProgress::quads set to the fixed patch cell count.
+     *  Null = none. Must not throw or call back into the generator. */
     std::function<void(const GenerationProgress &)> onDetailedProgress;
     std::function<void(const QString &)>
         onDiagnostic; ///< Per-job geometry/patch notes; no global logger.
@@ -106,11 +111,27 @@ struct RefineHook {
      *  outside both (a street between curbs, a ditch between its banks).
      *  Null = no strips from break lines. */
     std::function<double(double x, double y)> elevationAt;
+    /*! Surface error (Z units) of one triangle against the reference DEM: receives its three
+     *  XY corners and their cached elevations (both arrays borrowed for the call) and writes
+     *  the failing sample's location, which refinement inserts, to the third argument. NaN =
+     *  coverage not verified.
+     *  Terrain refinement and the final check run only when this, terrainElevationAt and
+     *  terrainTolerance > 0 are all set. */
     std::function<double(const QPointF *, const double *, QPointF *)> terrainError;
     std::function<double(const QPointF *, const double *)>
         terrainErrorBound; ///< Certified residual and coverage for coarsening.
+    /*! Ground elevation (Z units) at a mesh XY coordinate; non-finite = unknown. Feeds the
+     *  per-vertex height cache of the terrain checks and, when set, the z of every output
+     *  vertex (otherwise z stays 0). Null disables terrain refinement. */
     std::function<double(double, double)> terrainElevationAt;
+    /*! Terrain error tolerance in Z units; > 0 (with terrainError and terrainElevationAt)
+     *  enables terrain refinement. 0 = off. Must be > 0 when terrainToleranceForFootprint is
+     *  set, or generate() fails with an invalid-policy error. */
     double terrainTolerance = 0.0;
+    /*! Tolerance (Z units) for a triangle's or patch cell's XY bounding box, replacing
+     *  terrainTolerance per cell (for example scaled with the target size). A result that is not
+     *  finite and > 0 makes generate() fail (or rejects the patch). Setting it also turns on
+     *  the quad patch gate, as unifiedCellPlanning does. */
     std::function<double(const QRectF &)> terrainToleranceForFootprint;
 
     /*! Insert terrain points worst error first once size and angle are met
@@ -153,7 +174,17 @@ struct GenerationOptions {
     int smoothingPasses = 0;
     bool diagnosticProvenance = false; ///< Review harness only; no effect on geometry.
     int coarsenPasses = 0; ///< Bounded attempts to remove unnecessary free vertices; 0 = off.
+    /*! Order in which coarsening visits free vertices: LegacyFlatness by star flatness;
+     *  ResolutionAware by normal departure weighted by actual / target size, with
+     *  RefineHook::footprintMaximumSize (or the maxArea size) as the target. Ordering only;
+     *  the removal checks are the same. */
     CoarseningOrder coarseningOrder=CoarseningOrder::LegacyFlatness;
+    /** @var coarseningReferenceSize
+     *  XY-unit size ResolutionAware ordering uses where the target is 0 (unbounded). With
+     *  ResolutionAware it must be finite and > 0, else generate() fails. */
+    /** @var normalVerticalToXY
+     *  Factor turning elevation differences into XY units for ResolutionAware facet normals
+     *  (vertical / horizontal metres per unit); finite and > 0 with that order. */
     double coarseningReferenceSize=10,normalVerticalToXY=1;
 
     /*! Smallest spacing between distinct channel corridor vertices (lattice
@@ -175,17 +206,37 @@ struct GenerationOptions {
      *  prebuilt quad patches conflict with this mode and cause a clear failure. */
     bool allowQuads = true;
     bool preserveConstraintCoordinates = false; ///< Only exact junctions/crossings are joined.
+    /*! Also cap every triangle's area by its footprint: RefineHook::footprintMaximumSize over
+     *  its bounding box (required when targetAreaAt is set), else the sampled size and region
+     *  spacings. Enables the adjacent-ratio repair below. A non-finite or negative footprint
+     *  size, or invalid repair limits, make generate() fail. */
     bool verifiedSizing = false;
+    /*! Plan all quad regions jointly before triangulation, gate every patch and regenerate
+     *  (at most three retries) after interface conflicts. Requires verifiedSizing, implies
+     *  preserveConstraintCoordinates, and is required by QuadRegion::requireMapped. */
     bool unifiedCellPlanning = false;
+    /*! Shortest permitted quad patch cell edge, XY units; 0 = no check. Applied only when the
+     *  patch gate is active (unifiedCellPlanning or terrainToleranceForFootprint): a failing
+     *  required patch fails generation, a preferred one falls back to triangles. */
     double minimumRequiredEdge = 0;
+    /*! Largest size ratio, sqrt of the area ratio, between neighbouring triangles, enforced by
+     *  the sizing repair passes (verifiedSizing only). 0 = off, else >= 1. With
+     *  unifiedCellPlanning it also bounds triangles beside fixed patch edges and is audited
+     *  across patch interfaces, which can trigger a retry. */
     double maximumAdjacentRatio = 0;
+    /** @var sizingRepairPasses
+     *  Re-examination passes (0..3) of every live triangle against the size, footprint and
+     *  adjacent-ratio bounds after refinement, smoothing and coarsening (verifiedSizing only). */
+    /** @var maximumSizingRepairInsertions
+     *  Cap on vertices the repair passes may insert, >= 0; reaching it (or 0) stops the repair
+     *  and sets GenerationStats::sizingRepairLimited. */
     int sizingRepairPasses = 2, maximumSizingRepairInsertions = 200000;
 };
 
 /*! \brief Per-region outcome of generate() (MeshGenerator::quadRegionReports()). */
 struct QuadRegionReport {
-    int index = -1;
-    QuadRegionMode requested = QuadRegionMode::Auto;
+    int index = -1; ///< Region index in addQuadRegion() order.
+    QuadRegionMode requested = QuadRegionMode::Auto; ///< The region's QuadRegion::mode.
     QuadRegionMode resolved = QuadRegionMode::
         TrianglesOnly;     ///< Mapped = aligned quads; TrianglesOnly = triangles inside the ring.
     bool accepted = false; ///< Region was included in generation, not skipped.
@@ -201,23 +252,77 @@ struct GenerationStats {
     int breaklineStrips = 0; ///< Quad strips between facing break lines.
     int stripsDropped = 0;   ///< Strips that did not fit (logged; the feature stays triangles).
     int refineInserted = 0;  ///< Vertices the quality refinement added.
+    /** @var sizeInserted
+     *  Refinement vertices placed because a triangle exceeded a size bound (target size,
+     *  footprint cap or adjacent ratio). */
+    /** @var qualityInserted
+     *  Refinement vertices placed to raise a triangle's smallest angle. */
+    /** @var terrainInserted
+     *  Refinement vertices placed where a triangle's terrain error exceeded the tolerance. */
+    /** @var segmentSplits
+     *  Constrained subsegment splits during refinement (counted in refineInserted too). */
     int sizeInserted = 0, qualityInserted = 0, terrainInserted = 0, segmentSplits = 0;
+    /** @var terrainUnresolved
+     *  Final-check triangles whose terrain error is still above the tolerance; 0 when the
+     *  check is off (RefineHook::terrainFinalCheck false or no terrain). */
+    /** @var terrainUnknown
+     *  Final-check triangles whose error or tolerance is not finite (coverage unverified). */
     int terrainUnresolved = 0, terrainUnknown = 0;
-    double maxTerrainError = 0.0;
+    double maxTerrainError = 0.0; ///< Largest finite final-check terrain error, Z units.
     /*! Triangles under the minimum angle that the small-input-angle
      *  exemption does not explain: they rest on fixed quad strip edges or on
      *  inputs closer together than a quarter of the minimum cell size. */
     int trianglesBelowAngle = 0;
+    /** @var coarsenRemoved
+     *  Free vertices coarsening removed. */
+    /** @var coarsenRejectedAngle
+     *  Removals refused because a replacement triangle would break the minimum angle. */
+    /** @var coarsenRejectedSize
+     *  Removals refused because a replacement triangle would exceed a size bound. */
     int coarsenRemoved = 0, coarsenRejectedAngle = 0, coarsenRejectedSize = 0;
+    /** @var coarsenRejectedTerrain
+     *  Removals refused by the terrain checks (includes coarsenHeightRejects). */
+    /** @var coarsenRejectedEdge
+     *  Removals refused because a replacement triangle's shortest edge would be shorter than
+     *  the shortest edge around the vertex. */
+    /** @var coarsenAttempts
+     *  Removal attempts: active vertices taken from the coarsening queue. */
     int coarsenRejectedTerrain = 0, coarsenRejectedEdge = 0, coarsenAttempts = 0;
+    /** @var coarsenHeightRejects
+     *  Terrain refusals where the removed vertex's own height misses the new covering plane
+     *  by more than the tolerance. */
+    /** @var coarsenBoundAccepts
+     *  Replacement triangles certified by the propagated error bound, with no DEM query. */
+    /** @var coarsenExactQueries
+     *  Replacement triangles that needed a RefineHook::terrainErrorBound call. */
     int coarsenHeightRejects = 0, coarsenBoundAccepts = 0, coarsenExactQueries = 0;
+    /// True when terrain refinement was active without RefineHook::terrainErrorBound, so
+    /// coarsening was skipped entirely.
     bool coarsenSkippedTerrain = false;
-    double coarsenSeconds = 0;
+    double coarsenSeconds = 0; ///< Wall-clock seconds spent in the coarsening stage.
+    /** @var coarsenQueuePeak
+     *  Largest number of entries the coarsening queue held. */
+    /** @var coarsenPriorityQueries
+     *  Target-size queries made to rank vertices (ResolutionAware order only; else 0). */
     quint64 coarsenQueuePeak=0,coarsenPriorityQueries=0;
 
     bool refineCapped = false; ///< Refinement stopped at its safety cap.
+    /** @var sizingRepairInserted
+     *  Vertices the sizing repair passes inserted (GenerationOptions::sizingRepairPasses). */
+    /** @var sizingRepairPasses
+     *  Repair passes actually run, 0..3; a pass that inserts nothing ends the repair. */
     int sizingRepairInserted = 0, sizingRepairPasses = 0;
+    /// True when the repair stopped at GenerationOptions::maximumSizingRepairInsertions (or
+    /// that cap was 0), so size or ratio violations may remain.
     bool sizingRepairLimited = false;
+    /** @var triangulationPasses
+     *  Generation attempts the last generate() made; > 1 means a patch or planning retry. */
+    /** @var plannedPatches
+     *  Unified-planning regions delivered as mapped patches (accepted or repaired). */
+    /** @var repairedPatches
+     *  Of plannedPatches, those that needed at least one repair round. */
+    /** @var triangleFallbacks
+     *  Unified-planning regions that requested quads but resolved to triangles. */
     int triangulationPasses = 0, plannedPatches = 0, repairedPatches = 0, triangleFallbacks = 0;
 };
 
@@ -438,6 +543,14 @@ public:
      * @details Counts from the last generate().
      */
     [[nodiscard]] const GenerationStats &stats() const { return m_stats; }
+    /**
+     * @brief Borrow the patch planning records of the most recent generation attempt.
+     * @return Const reference to owned records, cleared at the start of each attempt and
+     * possibly partial on failure: fixed patches (when the patch gate is active), unified-plan
+     * region decisions, and conduit / bank-pair strip outcomes (unified planning only). Empty
+     * when neither unifiedCellPlanning nor RefineHook::terrainToleranceForFootprint is set.
+     * Valid until the next generate(); no allocation or synchronization.
+     */
     [[nodiscard]] const QVector<PatchDecision> &cellPlanDecisions() const { return m_patchDecisions; }
     /**
      * @brief Return the compatibility placeholder for triangle-pairing locks.

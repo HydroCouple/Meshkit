@@ -26,8 +26,14 @@
 namespace mesh
 {
 
+/**
+ * @brief Boundary condition, conveyance factor and wall drag of one cell-edge slot.
+ *
+ * Plain value type; only the fields relevant to `type` are meaningful, the rest keep their
+ * defaults. Units are the authored project units; nothing is converted or validated here.
+ */
 struct MeshEdgeBC {
-    MeshBCTypes::Type type = MeshBCTypes::Type::Wall;
+    MeshBCTypes::Type type = MeshBCTypes::Type::Wall; ///< Variant; Wall (default) when unset.
     double head = 0.0; ///< Stage for SpecifiedStageConst (project vert. units)
     double slope =
         0.0; ///< Bed slope for NormalFlow (dimensionless; must be > 0 — the engine treats 0 as a wall)
@@ -46,8 +52,9 @@ struct MeshEdgeBC {
     /**
      * @brief Compare every stored boundary-condition and conveyance attribute exactly.
      * @param[in] o Borrowed other value, unchanged.
-     * @return True only if type, head, slope, flow, timeseries, curve, group and conveyance all
-     * compare equal. No floating tolerance or normalization is applied; NaN fields compare
+     * @return True only if type, head, slope, flow, timeseries, curve, group, conveyance and
+     * wallDrag all compare equal. No floating tolerance or normalization is applied; NaN fields
+     * compare
      * unequal even to themselves. No allocation, mesh mutation or engine synchronization.
      */
     bool operator==(const MeshEdgeBC &o) const noexcept

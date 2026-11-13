@@ -1,0 +1,192 @@
+name: Documentation
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v*.*.*" ]
+    paths: ['docs/**', 'python/docs/**', 'python/meshkit/**', 'include/**', 'src/**', '*.md',
+            'python/README.md', '.github/workflows/documentation.yml']
+  pull_request:
+    branches: [ "main" ]
+    paths: ['docs/**', 'python/docs/**', 'python/meshkit/**', 'include/**', 'src/**', '*.md',
+            'python/README.md', '.github/workflows/documentation.yml']
+  workflow_dispatch:
+
+# Allow only one concurrent deployment.  Do NOT cancel in-progress runs so
+# that production deployments always complete.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 1 – Build Python (Sphinx) documentation
+# ─────────────────────────────────────────────────────────────────────────────
+  build_python_docs:
+    name: Build Python Docs (Sphinx)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Sphinx and theme dependencies
+        run: pip install -r python/docs/requirements.txt
+
+      - name: Build Sphinx HTML docs
+        # conf.py adds python/ to sys.path and loads meshkit/_meshkit.pyi in
+        # place of the compiled extension, so nothing is built or installed.
+        # -W promotes warnings to errors so a regression in the docs blocks
+        # the build; --keep-going still surfaces every issue in one pass.
+        run: sphinx-build -b html -W --keep-going python/docs python/docs/_build/html
+
+      - name: Upload Python docs artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: python-docs
+          path: python/docs/_build/html/
+          retention-days: 1
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 2 – Build C++ documentation (Doxygen)
+# ─────────────────────────────────────────────────────────────────────────────
+  build_doxygen_docs:
+    name: Build C++ Docs (Doxygen)
+    needs: [build_python_docs]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Graphviz and download tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz wget tar
+
+      - name: Install Doxygen 1.13.2
+        run: |
+          DOXYGEN_VERSION=1.13.2
+          # Doxygen release TAGS use underscores (Release_1_13_2) while the
+          # asset filename uses dots (doxygen-1.13.2.linux.bin.tar.gz).
+          DOXYGEN_TAG="Release_${DOXYGEN_VERSION//./_}"
+          wget -q "https://github.com/doxygen/doxygen/releases/download/${DOXYGEN_TAG}/doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz"
+          tar -xzf doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz
+          sudo mv doxygen-${DOXYGEN_VERSION}/bin/doxygen /usr/local/bin/doxygen
+          doxygen --version
+
+      - name: Build Doxygen HTML docs
+        # The Markdown pages pass through repo_links_filter.py (python3), which
+        # points links to repository files at GitHub.
+        working-directory: docs
+        run: doxygen Doxyfile 2>&1 | tee doxygen.log
+
+      - name: Fail on Doxygen warnings
+        # The sources build without content warnings, so any warning fails.
+        # Notices about configuration tags this Doxygen build does not support
+        # ("warning: Tag '...'") describe the binary, not the sources.
+        working-directory: docs
+        run: |
+          if grep "warning:" doxygen.log | grep -v "^warning: Tag '"; then
+            echo "::error::Doxygen reported warnings (see above)"
+            exit 1
+          fi
+
+      - name: Check documentation coverage
+        # Every class, function, member, enum value and namespace carries a doc comment
+        # (namespaces in docs/namespaces.dox). A second, XML-free pass with EXTRACT_ALL off
+        # lists anything undocumented, and any such warning fails the build.
+        working-directory: docs
+        run: |
+          ( cat Doxyfile
+            echo "OUTPUT_DIRECTORY = $RUNNER_TEMP/coverage"
+            echo "EXTRACT_ALL = NO"
+            echo "WARN_IF_UNDOCUMENTED = YES"
+            echo "WARN_IF_UNDOC_ENUM_VAL = YES"
+            echo "HAVE_DOT = NO"
+            echo "GENERATE_HTML = NO"
+            echo "INPUT = ./namespaces.dox ../include ../src" ) | doxygen - > "$RUNNER_TEMP/coverage.log" 2>&1
+          if grep "warning:" "$RUNNER_TEMP/coverage.log" | grep -v "^warning: Tag '" \
+               | grep -v "No output formats selected" | grep -v "markdown mainpage"; then
+            echo "::error::Undocumented code (see above)"
+            exit 1
+          fi
+
+      - name: Archive Doxygen docs
+        # Doxygen can generate names such as functions_:.html. Transfer one
+        # archive because upload-artifact rejects colons in individual paths.
+        run: tar -czf doxygen-docs.tar.gz -C docs/html .
+
+      - name: Upload Doxygen docs artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: doxygen-docs
+          path: doxygen-docs.tar.gz
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Job 3 – Merge both doc sets and deploy to GitHub Pages
+#   Final site layout (https://www.hydrocouple.org/Meshkit/):
+#     /          → Doxygen C++ docs (main entry point)
+#     /python/   → Sphinx docs for the hydrocouple.meshkit package
+# ─────────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to GitHub Pages
+    # Pushes to main and manual runs on main deploy. Pull requests and tags
+    # only verify that the docs build.
+    if: |
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && github.ref == 'refs/heads/main'
+    needs: [build_python_docs, build_doxygen_docs]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      pages: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Download Doxygen docs
+        uses: actions/download-artifact@v5
+        with:
+          name: doxygen-docs
+          path: artifacts/doxygen/
+
+      - name: Extract Doxygen docs
+        run: |
+          mkdir -p site
+          tar -xzf artifacts/doxygen/doxygen-docs.tar.gz -C site
+
+      - name: Download Python docs
+        uses: actions/download-artifact@v5
+        with:
+          name: python-docs
+          path: site/python/
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload combined site artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

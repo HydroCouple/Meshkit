@@ -34,10 +34,21 @@
 namespace mesh
 {
 
+/**
+ * @brief Namespace-like QObject that registers the boundary-condition Type with Qt's
+ * meta-object system (Q_ENUM) and hosts static label/token/engine conversions.
+ *
+ * Holds no state; all helpers are static and reentrant.
+ */
 class MeshBCTypes : public QObject
 {
     Q_OBJECT
 public:
+    /**
+     * @brief GUI boundary-condition variants for one mesh edge. The integer values are locked
+     * (persisted in project files); stage and flow have separate constant/timeseries variants
+     * that engineBCType() collapses.
+     */
     enum class Type : int {
         Wall = 0,                ///< Zero-flux barrier (default)
         NormalFlow = 1,          ///< Manning outflow at bed slope
@@ -79,8 +90,9 @@ public:
      * @param[out] ok Optional borrowed result flag; true for any recognized token, false
      * otherwise. May be null, in which case recognition failure is available only through the
      * fallback behavior.
-     * @return Recognized GUI type, or Wall on an unrecognized/empty token. Use ok to distinguish
-     * an explicit WALL from failure. No project state mutation or ownership retention.
+     * @return Recognized GUI type (WALL and WALL_DRAG both give Wall), or Wall on an
+     * unrecognized/empty token. Use ok to distinguish an explicit WALL from failure. No project
+     * state mutation or ownership retention.
      *
      * @details Parse an INP TYPE token (uppercase or mixed case).
      */

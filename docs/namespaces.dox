@@ -1,0 +1,93 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Namespace documentation for the Doxygen site. Namespaces are opened in many headers, so
+ * their descriptions live here, in one place, rather than in an arbitrary header.
+ */
+
+/**
+ * @namespace meshkit
+ * @brief The Qt-free MeshKit library: job events and progress (`meshkit::runtime`), the
+ * neutral mesh model, meshing jobs, the constrained Delaunay kernel and terrain surfaces
+ * (`meshkit::core`), and the MKB and SMS 2DM codecs (`meshkit::io`).
+ *
+ * Standard C++17 only; see NATIVE_API.md for units, ownership and error reporting.
+ */
+
+/**
+ * @namespace meshkit::plan
+ * @brief Planning algorithms on standard containers: quad patch planning and placement, size
+ * fields, source-geometry simplification and the independent constraint and sizing audits.
+ *
+ * The Qt facades in namespace mesh delegate to these implementations.
+ */
+
+/**
+ * @namespace meshkit::plan::detail
+ * @brief Internal helpers of meshkit::plan; not part of the supported API.
+ */
+
+/**
+ * @namespace meshkit::plan::quadquality_detail
+ * @brief Internal checks behind the quadrilateral quality metrics; not part of the supported
+ * API.
+ */
+
+/**
+ * @namespace meshkit::detail
+ * @brief Storage policies and containers for the constrained Delaunay kernel and the plan
+ * model: StandardStorage (standard containers) and QtStorage (Qt containers). Not part of the
+ * supported API.
+ */
+
+/**
+ * @namespace meshkit::cdt_detail
+ * @brief Internals of the constrained Delaunay kernel implementation; not part of the
+ * supported API.
+ */
+
+/**
+ * @namespace meshkit::native_detail
+ * @brief Implementation helpers of the native jobs and codecs (failure signalling, work
+ * accounting, file publication); not installed and not part of the supported API.
+ */
+
+/**
+ * @namespace mesh
+ * @brief The Qt-facing MeshKit API (`meshkit::core_qt`, `meshkit::model_qt`,
+ * `meshkit::io_qt`): mesh value types and cell attributes, the mesh generator, quad regions,
+ * matching and cleanup, mesh statistics, and the INP and 2DM mesh codecs.
+ *
+ * Uses Qt value types (QVector, QPointF, QString); the planning, sizing and constraint
+ * facades delegate to the standard C++ implementations in meshkit and meshkit::plan.
+ */
+
+/**
+ * @namespace mesh::detail
+ * @brief Internal helpers of the Qt facades; not part of the supported API.
+ */
+
+/**
+ * @namespace mesh::native_adapter
+ * @brief Conversions between the Qt value types of namespace mesh and the standard types of
+ * meshkit::plan, used by the Qt facades.
+ */
+
+/**
+ * @namespace mesh::pslg
+ * @brief Preparation of planar straight-line graphs (PSLG) for meshing: Ramer–Douglas–Peucker
+ * simplification, straightness trimming, densification and resampling of paths and rings,
+ * hole-ring preparation, and point-in-rings tests.
+ */
+
+/**
+ * @namespace mesh::quadquality_detail
+ * @brief Internal checks behind the Qt quadrilateral quality metrics; not part of the
+ * supported API.
+ */
+
+/**
+ * @namespace EditGeometry
+ * @brief Pure geometry helpers for map editing: ring validation, interior points and related
+ * checks, with no GUI, OGR or engine dependency.
+ */

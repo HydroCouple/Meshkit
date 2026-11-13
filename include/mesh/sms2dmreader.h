@@ -23,6 +23,13 @@
 namespace mesh
 {
 
+/**
+ * @brief Stateless reader that turns an SMS 2DM mesh (file or text) into a MeshResult.
+ *
+ * All members are static and hold no state, so concurrent calls are independent. Results carry
+ * vertices, cells (triangles before quads) and, for read(), node strings as boundaryEdges;
+ * ok/errorMsg report failure. No unit or CRS conversion is applied.
+ */
 class Sms2dmReader
 {
 public:

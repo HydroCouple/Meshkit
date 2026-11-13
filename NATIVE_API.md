@@ -85,7 +85,8 @@ options and provider identity. Events use the existing bounded `EventChannel`.
 Limits bound counts, estimated workspace and orchestration/audit work, not total
 process RSS or arbitrary time inside caller providers. The kernel also has
 insertion/cell/repair caps and polls cancellation within build/refinement loops.
-Zero work allowance selects 20 billion orchestration/audit units. A job returns no
+Zero work allowance selects 20 billion units for the job's own counter; patch planning
+and the final constraint audit then size their budgets from their inputs. A job returns no
 partially accepted candidate when it reaches a cap. `validateMesh` checks finite
 coordinates, IDs, local connectivity and positive convex cell geometry; it does
 not certify arbitrary nonincident cell overlap or CRS correctness.

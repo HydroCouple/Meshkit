@@ -34,14 +34,30 @@
 namespace mesh
 {
 
+/**
+ * @brief Requested (or classified) cell strategy of a QuadRegion.
+ *
+ * classifyQuadRegion() can return Mapped, Submapped or Free for a ring. MeshGenerator builds
+ * only mapped (transfinite) patches: every request other than TrianglesOnly is meshed with
+ * quads when the ring has four logical sides and with triangles otherwise; the outcome is
+ * reported as Mapped or TrianglesOnly in QuadRegionReport::resolved.
+ */
 enum class QuadRegionMode {
     Auto,         ///< classifyQuadRegion() decides: Mapped → Submapped → Free.
     Mapped,       ///< Four logical sides (polylines) → transfinite quads. Needs 4 corners.
-    Submapped,    ///< Exactly rectilinear ring → grid-based structured quads.
-    Free,         ///< Cross-field aligned lattice + template pairing (quad-dominant).
+    /// Exactly rectilinear ring. A classification only: MeshGenerator meshes it like Mapped.
+    Submapped,
+    /// Quad-dominant (cross-field lattice) candidate. A classification only: MeshGenerator
+    /// meshes it like Mapped.
+    Free,
     TrianglesOnly ///< Region ring is still a constraint loop, interior stays triangles.
 };
 
+/**
+ * @brief A polygon in which quadrilateral cells are requested, with its spacing, shape and
+ * tagging policy. Plain value type; MeshGenerator::addQuadRegion() copies it. Lengths are in
+ * mesh XY (CRS) units.
+ */
 struct QuadRegion {
     QPolygonF ring; ///< Closed (last == first optional), simple, any orientation.
     /*! Areas subtracted from \ref ring (QUAD_EVERYWHERE_PLAN_2026-09-07.md §3.1):
@@ -56,12 +72,16 @@ struct QuadRegion {
      *  and the "region lies inside exactly one domain ring" validation is skipped
      *  because the region *is* that ring. */
     bool isBackground = false;
+    /// Requested strategy (default Auto). TrianglesOnly keeps triangles inside the ring; every
+    /// other value requests mapped quads (see QuadRegionMode).
     QuadRegionMode mode = QuadRegionMode::Auto;
     bool requireMapped = false; ///< Explicit hard requirement, used by unified planning.
     bool automaticCandidate = false; ///< Derived candidate; no outline constraint on fallback.
     double spacing = 0.0; ///< Target quad edge length h; 0 = derive from the size field / max area.
     bool directionalSpacing =
         false; ///< Explicit Mapped spacing; failure must not fall back to isotropic cells.
+    /** @var hAlong
+     *  Spacing for the side pair most aligned with mappedAlongAngleDeg (directional only). */
     double hAlong = 0.0,
            hAcross =
                0.0; ///< Positive spacings in mesh CRS units, used only when directionalSpacing.
@@ -70,6 +90,8 @@ struct QuadRegion {
     double aspectMax =
         -1.0; ///< Free: opposite-side mean ratio cap; < 0 inherits global, 0 unbounded, >= 1 explicit.
     bool hasAlignAngle = false; ///< Free: constant cross field at alignAngleDeg (from +x, CCW).
+    /// Free: cross-field angle, degrees from +x CCW, meaningful when hasAlignAngle. Only copied
+    /// to the native type; MeshKit's generator and planner do not read it.
     double alignAngleDeg = 0.0;
     QVector<QPointF>
         alignGuide;       ///< Free: optional polyline the field aligns to (streets, channels).

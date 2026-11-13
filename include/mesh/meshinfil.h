@@ -63,13 +63,13 @@ struct MeshResult;
  *  explicit `None`. Stored in files as the tokens returned by
  *  infilMethodToken(). */
 enum class InfilMethod : int {
-    None = -1,
-    Horton = 0,
-    ModHorton = 1,
-    GreenAmpt = 2,
-    ModGreenAmpt = 3,
-    CurveNumber = 4,
-    Constant = 5
+    None = -1,        ///< No infiltration method assigned.
+    Horton = 0,       ///< Horton.
+    ModHorton = 1,    ///< Modified Horton.
+    GreenAmpt = 2,    ///< Green-Ampt.
+    ModGreenAmpt = 3, ///< Modified Green-Ampt.
+    CurveNumber = 4,  ///< SCS curve number.
+    Constant = 5      ///< Constant infiltration rate.
 };
 
 /*! Destination of infiltrated water (engine `Infil2DDest`). */
@@ -99,9 +99,10 @@ inline constexpr int kInfilMaxParams = 5;
  *  NaN in a slot means "not set"; the writer emits `-` for unused columns.
  */
 struct InfilRow {
-    InfilMethod method = InfilMethod::None;
+    InfilMethod method = InfilMethod::None; ///< Model; None (default) = no infiltration.
+    /// Positional parameters p0..p4 in project units (table above); NaN (default) = unset.
     double p[kInfilMaxParams] = {qQNaN(), qQNaN(), qQNaN(), qQNaN(), qQNaN()};
-    InfilDest dest = InfilDest::Lost;
+    InfilDest dest = InfilDest::Lost; ///< Where infiltrated water goes; Lost by default.
 
     /**
      * @brief Test whether this row explicitly selects no infiltration method.
@@ -132,8 +133,8 @@ struct InfilRow {
 /*! \brief One `[2D_INFILTRATION_DEFAULTS]` row. `tag == "*"` is the mesh-wide
  *         fallback and may appear anywhere in the section. */
 struct InfilDefaultRow {
-    QString tag;
-    InfilRow row;
+    QString tag; ///< Cell tag matched exactly (case-sensitive); "*" = mesh-wide fallback.
+    InfilRow row; ///< Specification inherited by cells with this tag (may be an explicit None).
 };
 
 /*! \brief `[2D_INFILTRATION_OPTIONS]`. */
@@ -155,8 +156,8 @@ enum class InfilProvenance : int {
 
 /*! \brief Result of resolving one triangle's infiltration. */
 struct ResolvedInfil {
-    InfilRow row;
-    InfilProvenance provenance = InfilProvenance::None;
+    InfilRow row; ///< Winning row copied from its source; a None row when nothing resolves.
+    InfilProvenance provenance = InfilProvenance::None; ///< Which source supplied row.
     QString sourceTag; //!< Tag that supplied it (Tag/Star only)
 
     /**
@@ -400,19 +401,19 @@ QString infilDestHint(InfilDest d);
 /*! \brief One row of a classified lookup: a key (or key pair, for the
  *         Curve-Number landuse×HSG case) mapping to a full InfilRow. */
 struct InfilLookupEntry {
-    QString key1;
+    QString key1; //!< Class key, matched case-insensitively without trimming by lookup()
     QString key2; //!< Empty for single-key lookups
-    InfilRow row;
+    InfilRow row; //!< Specification returned when the key(s) match
 };
 
 /*! \brief An editable, reusable classified lookup table. Saved/loaded as CSV
  *         so an agency's standard table travels between projects. */
 struct InfilLookupTable {
-    QString name;
-    bool twoKey = false;
-    QString key1Label;
-    QString key2Label;
-    QVector<InfilLookupEntry> entries;
+    QString name; //!< Display name (CSV `# NAME:`); the loader falls back to the file basename
+    bool twoKey = false; //!< True: entries match key1 AND key2; false: key2 is ignored
+    QString key1Label;   //!< Caption of the first key column (CSV `# KEY1:`)
+    QString key2Label;   //!< Caption of the second key column (CSV `# KEY2:`), two-key only
+    QVector<InfilLookupEntry> entries; //!< Searched in order; the first match wins
     InfilRow fallback; //!< Applied to unmatched keys
 
     /**

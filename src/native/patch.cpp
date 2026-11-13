@@ -1,7 +1,7 @@
 #include "meshkit/patch.hpp"
 #include "meshkit/cdt.hpp"
 /**
- * @file      meshpatch.cpp
+ * @file      patch.cpp
  * @brief     Structured quad patches (workplans/TRI_QUAD_MESHING_PLAN_2026-09-06.md §3.2, phase
  *            G3).
  * @author    Caleb Buahin <caleb.buahin@gmail.com>
@@ -732,6 +732,9 @@ PatchMesh makeTransfinitePatch(const StructuredPatch &p, Text *err)
  * @param[in] tag Borrowed patch/cell tag copied verbatim, no token-grammar validation.
  * @param[out] err Optional borrowed diagnostic, set on failure, not retained; success clearing
  * is stated below.
+ * @param[in] stationed True when the sides are already stationed: their vertices are used
+ * directly as boundary stations (no arc-length resampling) and adjacent endpoints must match
+ * exactly. False samples each side by arc length.
  * @return Owned XY-only patch with local-index CCW quads/boundary and copied tag; empty on
  * checked failure. No elevations, source mutation, coordinate conversion, engine/file access or
  * retained inputs. Index capacity checks do not constitute a practical memory budget or

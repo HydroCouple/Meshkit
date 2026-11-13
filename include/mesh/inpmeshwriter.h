@@ -59,6 +59,14 @@ enum class MeshOutputMode {
     Inline    ///< Inline the four sections directly in the `.inp`.
 };
 
+/**
+ * @brief Stateless writer that renders a MeshResult plus CouplingMap as SWMM `[2D_*]` section
+ * text and writes or patches it into a `.inp` and, in External mode, a sidecar `.2dm`.
+ *
+ * Every function is static and keeps no state between calls; values are written in the units
+ * the mesh already carries (no conversion). File commits use QSaveFile per file, but a
+ * two-file write is not a transaction; see each function for its failure behaviour.
+ */
 class InpMeshWriter
 {
 public:

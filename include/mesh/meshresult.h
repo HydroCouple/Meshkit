@@ -40,6 +40,8 @@ struct MeshVertex {
     /// the token and the engine applies [2D_OPTIONS] COUPLING_CD / the
     /// node's 2D coupling structure (an authored AREA forces a CD column).
     bool couplingCdSet = true;
+    /// False when the [2D_VERTEX_NODE_MAP] row has no AREA token: the writer omits AREA (and
+    /// CD too unless couplingCdSet). True also forces the CD column to be written.
     bool couplingAreaSet = true;
 };
 
@@ -60,9 +62,15 @@ struct MeshVertex {
  *  engine's cell order.
  */
 struct MeshTriangle {
+    /** @var v0
+     *  First corner: index into MeshResult::vertices (not range-checked here). */
+    /** @var v1
+     *  Second corner, cyclically after v0. */
+    /** @var v2
+     *  Third corner, cyclically after v1. */
     int v0 = 0, v1 = 0, v2 = 0;
     int v3 = -1; ///< Fourth vertex of a quadrilateral; -1 = triangle.
-    QString tag; ///< Region tag (e.g. subcatchment ID); empty if untagged.
+    QString tag; ///< Region tag, for example a subcatchment ID; empty if untagged.
     /// Manning's roughness ([2D_TRIANGLES] MANNINGS_N). NaN = unset, so the
     /// writer falls back to the caller's default (mesh generation uses a
     /// uniform value); a loaded mesh carries the per-triangle value.
@@ -81,7 +89,7 @@ struct MeshTriangle {
     /// ([2D_INITIAL_VELOCITY] U and V). 0, 0 = at rest, the engine default;
     /// only moving cells are written.
     double initU = 0.0;
-    double initV = 0.0;
+    double initV = 0.0; ///< [2D_INITIAL_VELOCITY] V: map-Y velocity in m/s; see initU.
 
     /**
      * @brief Classify the cell solely by whether a fourth vertex identifier is present.
@@ -165,6 +173,10 @@ using MeshCell = MeshTriangle;
 
 /*! \brief A boundary edge with its source-segment marker preserved. */
 struct MeshEdge {
+    /** @var v0
+     *  First endpoint: index into MeshResult::vertices, in source-path order. */
+    /** @var v1
+     *  Second endpoint; the pair is not oriented relative to the adjacent cells. */
     int v0 = 0, v1 = 0;
     int marker = 0; ///< Source segment marker; non-zero if assigned by caller.
     QString tag;    ///< Resolved tag (e.g. conduit ID, "domain", "outflow").
@@ -189,12 +201,45 @@ struct CellCoupling {
 
 /*! \brief Result of \ref MeshGenerator::generate. */
 struct MeshResult {
+    /// Mesh vertices; cells and edges index into this array. A generated mesh may keep
+    /// vertices that no cell references (MeshGenerator::generate does not compact them).
     QVector<MeshVertex> vertices;
     QVector<MeshTriangle> triangles; ///< Cells: triangles first, then quads (engine order).
+    /// Marked constraint edges, not only the outer boundary: generate() lists every kept
+    /// sub-edge of the domain rings and barrier constraints plus patch interior lines
+    /// (conduits along strips); Sms2dmReader::read stores NS node strings here.
     QVector<MeshEdge> boundaryEdges;
     QVector<CellCoupling> cellCouplings; ///< Node→cell couplings (Part C).
 
-    /*! Per-cell infiltration (INTEGRATED2D_GW_GUI_PLAN §3.2a, phase GG0).
+    /** @var surfaceMeshWeatherPercent
+     *  Per-cell share of the cell's weather that remains with the mesh, in percent
+     *  ("Remaining mesh weather"), indexed like triangles. Engine-resolved from the
+     *  reviewed surface geometry (not runtime recharge) and filled by the caller, never by
+     *  MeshKit; empty =
+     *  unavailable, and cellParamValue() returns NaN for indices past the end. */
+    // Engine-resolved authoring preview; absent means unavailable, not zero.
+    QVector<double> surfaceMeshWeatherPercent, surfaceSourcePerviousPercent;
+    /** @var surfaceSourcePerviousPercent
+     *  Per-cell spatial-source pervious/LID area in percent, indexed like triangles. Filled
+     *  by the caller from the engine, never by MeshKit; empty = unavailable, and
+     *  cellParamValue() returns NaN for indices past the end. */
+    /// Per-cell surface ownership review code, indexed like triangles and caller-filled:
+    /// 0 mesh only, 1 subcatchment/uniform, 2 unreviewed overlap, 3 invalid review. Empty =
+    /// unavailable.
+    QVector<int> surfaceOwnershipStatus;
+    /** @var infiltrationOwner
+     *  Per-cell resolved infiltration owner, indexed like triangles and caller-filled from the
+     *  engine: 0 process disabled, 1 surface bank, 2 aquifer. Empty = unavailable. */
+    /** @var infiltrationConflict
+     *  Per-cell infiltration conflict code, caller-filled: 0 none, 1 explicit surface cell
+     *  method, 2 obsolete destination. Empty = unavailable. */
+    QVector<int> infiltrationOwner, infiltrationConflict;
+    /// Per-cell display text naming the infiltration source, caller-filled and parallel to
+    /// infiltrationOwner; MeshKit itself neither reads nor writes it.
+    QStringList infiltrationSource;
+    /*! @brief Per-cell infiltration defaults: tag rows; '*' = mesh-wide fallback.
+     *
+     *  Per-cell infiltration (INTEGRATED2D_GW_GUI_PLAN §3.2a, phase GG0).
      *
      *  Follows the CellCoupling precedent above — sparse/inherited rows live
      *  on MeshResult rather than bloating the per-triangle POD. Resolution is
@@ -210,17 +255,12 @@ struct MeshResult {
      *  inline). They must NOT be appended to [2D_TRIANGLES], whose columns
      *  are positional.
      */
-    // Engine-resolved authoring preview; absent means unavailable, not zero.
-    QVector<double> surfaceMeshWeatherPercent, surfaceSourcePerviousPercent;
-    QVector<int> surfaceOwnershipStatus;
-    QVector<int> infiltrationOwner, infiltrationConflict;
-    QStringList infiltrationSource;
-    QVector<InfilDefaultRow> infilDefaults; ///< Tag rows; '*' = mesh-wide fallback.
+    QVector<InfilDefaultRow> infilDefaults;
     QHash<int, InfilRow> infilOverrides;    ///< Sparse, keyed by triangle index.
     InfilOptions infilOptions;              ///< [2D_INFILTRATION_OPTIONS].
 
-    bool ok = false;
-    QString errorMsg;
+    bool ok = false;  ///< True only when the producer (generator or reader) succeeded.
+    QString errorMsg; ///< Failure reason when ok is false; empty on success.
 
     /**
      * @brief Count cells whose fourth identifier classifies them as quadrilaterals.

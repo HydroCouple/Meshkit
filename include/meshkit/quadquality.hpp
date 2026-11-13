@@ -1,7 +1,7 @@
 
 #include "meshkit/detail/planmodel.hpp"
 /**
- * @file      meshquadquality.h
+ * @file      quadquality.hpp
  * @brief     Quadrilateral quality metrics (workplans/QUAD_MESHING_REDESIGN_PLAN_2026-09-06.md
  *            §5).
  * @author    Caleb Buahin <caleb.buahin@gmail.com>
@@ -33,15 +33,20 @@ namespace meshkit::plan
  *  legacy tri-pair merge. Defaults are the plan's (§5): hard 60°/120°,
  *  SJ ≥ 0.866, aspect ≤ 2. */
 struct QuadQualityBounds {
-    double minAngleDeg = 60.0;
-    double maxAngleDeg = 120.0;
-    double minScaledJacobian = 0.866;
+    double minAngleDeg = 60.0;  ///< Smallest accepted interior angle, degrees (inclusive).
+    double maxAngleDeg = 120.0; ///< Largest accepted interior angle, degrees (inclusive).
+    double minScaledJacobian = 0.866; ///< Smallest accepted scaled Jacobian (inclusive).
     double maxAspect = 2.0; ///< longest / shortest side (opposite-side means). <= 0 = unbounded.
 };
 
+/**
+ * @brief Metrics of one quadrilateral, as computed by quadQuality().
+ *
+ * A default-constructed record (convex false, area 0) is what invalid geometry yields.
+ */
 struct QuadQuality {
-    double minAngleDeg = 0.0;
-    double maxAngleDeg = 0.0;
+    double minAngleDeg = 0.0; ///< Smallest unsigned interior corner angle, degrees.
+    double maxAngleDeg = 0.0; ///< Largest unsigned interior corner angle, degrees.
     double scaledJacobian = 0.0; ///< min_i sin(theta_i), signed (negative = folded).
     double rectangularity = 0.0; ///< 1 - max_i |theta_i - 90| / 90.
     double aspect = 1.0;         ///< mean(s0,s2) vs mean(s1,s3), >= 1.
@@ -161,7 +166,7 @@ inline QuadQuality quadQuality(const Point2 &a, const Point2 &b, const Point2 &c
  * invalid geometry nonconvex; z/material metadata ignored. No allocation, ownership retention or
  * mesh mutation.
  *
- * @details Metrics for a quad cell of \p mesh (t.v3 >= 0 required).
+ * @details Metrics for quad cell \p t of \p vertices (t.v3 >= 0 required).
  */
 inline QuadQuality quadQuality(const Vector<MeshVertex> &vertices, const MeshTriangle &t)
 {

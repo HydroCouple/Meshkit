@@ -23,13 +23,13 @@
 namespace mesh
 {
 
-/*! \brief Min / max / mean / median of triangle areas (project CRS units²). */
+/*! \brief Min / max / mean / median of cell areas, triangles and quads (project CRS units²). */
 struct CellAreaStats {
-    double min = 0.0;
-    double max = 0.0;
-    double mean = 0.0;
-    double median = 0.0;
-    int count = 0; ///< Triangles measured; 0 = stats invalid.
+    double min = 0.0;    ///< Smallest measured cell area (triangles and quads); 0 when count == 0.
+    double max = 0.0;    ///< Largest measured cell area; 0 when count == 0.
+    double mean = 0.0;   ///< Arithmetic mean of the measured cell areas; 0 when count == 0.
+    double median = 0.0; ///< Median area; even counts average the two middle values.
+    int count = 0; ///< Cells measured (triangles and quads); 0 = stats invalid.
 };
 
 /**
@@ -166,10 +166,12 @@ using EdgeVertexPair = QPair<int, int>;
  */
 struct CflStats {
     double min = 0.0; ///< The cell that sets dt0.
+    /// 10th percentile of the positive L_char samples: the sorted sample at index
+    /// round(0.1 * (count - 1)), no interpolation.
     double p10 = 0.0;
-    double p50 = 0.0;
-    double p90 = 0.0;
-    double max = 0.0;
+    double p50 = 0.0; ///< Median L_char by the same nearest-index rule (not averaged).
+    double p90 = 0.0; ///< 90th percentile L_char by the same nearest-index rule.
+    double max = 0.0; ///< Largest positive L_char.
     double ratio = 0.0; ///< p50 / min. Reportable, not a gate — see ltsWork.
 
     /*! Tiers local timestepping would need to cover the spread, versus the
@@ -186,6 +188,8 @@ struct CflStats {
     double ltsWork = 0.0;
 
     int count = 0; ///< Cells measured; 0 = stats invalid.
+    /// Edges shared by exactly two index-valid cells (boundary and non-manifold edges excluded);
+    /// left 0 when count == 0.
     int interiorFaces = 0;
     int isolatedCells = 0; ///< No interior face; used the 2A/xi_max fallback.
 };
@@ -236,15 +240,21 @@ struct CflStats {
  *  Angles: the smallest interior corner over every cell. */
 struct GradingStats {
     int faces = 0; ///< Interior faces measured; 0 = stats invalid.
-    double ratioMax = 1.0;
-    double ratioP50 = 1.0;
-    double ratioP95 = 1.0;
+    double ratioMax = 1.0; ///< Largest longest-edge ratio (>= 1) across an interior face.
+    double ratioP50 = 1.0; ///< Median ratio: sorted element at index faces / 2 (upper middle).
+    double ratioP95 = 1.0; ///< Sorted element at floor(0.95 * faces), capped at the last.
     /*! Faces with ratio in (1.25·k-ish) bands: <=1.25, <=1.5, <=2, <=3, <=4, >4. */
     int ratioHistogram[6] = {0, 0, 0, 0, 0, 0};
+    /// Median non-orthogonality (degrees, upper middle) over faces whose edge and centroid
+    /// connector both have positive length; 0 when none.
     double orthoMedianDeg = 0.0;
-    double orthoMaxDeg = 0.0;
+    double orthoMaxDeg = 0.0; ///< Largest non-orthogonality (degrees); 0 when none sampled.
     double minAngleDeg = 180.0; ///< Over triangles and quads (180 when no cell).
     int cellsBelow10Deg = 0;    ///< Cells with a corner under 10°.
+    /** @var triangles
+     *  Three-vertex cells measured (valid indices, positive area and longest edge). */
+    /** @var quads
+     *  Four-vertex cells measured under the same validity rule. */
     int triangles = 0, quads = 0;
 };
 

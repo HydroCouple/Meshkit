@@ -1,7 +1,7 @@
 
 #include "meshkit/detail/planmodel.hpp"
 /**
- * @file      meshpatch.h
+ * @file      patch.hpp
  * @brief     Structured quad patches (workplans/TRI_QUAD_MESHING_PLAN_2026-09-06.md §3.2, phase
  *            G3).
  * @author    Caleb Buahin <caleb.buahin@gmail.com>
@@ -11,15 +11,16 @@
  * Structured quad patches (workplans/TRI_QUAD_MESHING_PLAN_2026-09-06.md
  * §3.2, phase G3). Two authoring forms:
  *
- *  - \ref mesh::StructuredPatch — a four-sided polygon meshed by transfinite
+ *  - \ref meshkit::plan::StructuredPatch — a four-sided polygon meshed by transfinite
  *    (Coons) interpolation between opposite sides, n × m quads;
- *  - \ref mesh::SweptPatch — a centreline polyline swept with a width, quads
+ *  - \ref meshkit::plan::SweptPatch — a centreline polyline swept with a width, quads
  *    laid across the channel at each station (channel / street case).
  *
- * Both produce a \ref mesh::PatchMesh in LOCAL vertex indices, which
- * MeshGenerator::addPatch stitches into the triangle domain: the boundary
- * segments become PSLG constraints, the interior a hole, and the quads are
- * appended after the triangles (engine order).
+ * Both produce a \ref meshkit::plan::PatchMesh in LOCAL vertex indices. The native job
+ * plans and places patches through preparePatches() before triangulation; the Qt
+ * MeshGenerator::addPatch stitches the mesh:: mirror types into the triangle domain (the
+ * boundary segments become PSLG constraints, the interior a hole, and the quads are
+ * appended after the triangles).
  * @copyright Copyright (c) 2026 Caleb Buahin. All rights reserved.
  */
 
@@ -34,8 +35,13 @@ namespace meshkit::plan
  *  corner0→corner3 (and corner1→corner2). */
 struct StructuredPatch {
     Vector<Point2> corners; ///< Exactly 4, cyclic.
+    /// \var n
+    /// \brief Subdivisions along corner0→corner1; must be >= 1.
+    /// \var m
+    /// \brief Subdivisions along corner0→corner3; must be >= 1. The vertex, cell and boundary
+    /// counts (n+1)×(m+1), n×m and 2(n+m) must fit in int.
     int n = 0, m = 0;
-    Text tag;
+    Text tag; ///< Label copied to PatchMesh::tag and to every generated quad.
 };
 
 /*! \brief Swept patch: the centreline is offset ±width/2 (mitred at interior
@@ -44,10 +50,13 @@ struct StructuredPatch {
  *  vertices are kept); 0 = one station per centreline vertex. */
 struct SweptPatch {
     Vector<Point2> centreline; ///< >= 2 points.
-    double width = 0.0;
-    int across = 0;
+    double width = 0.0; ///< Full strip width, XY units; must be finite and > 0.
+    int across = 0;     ///< Quads across the strip at every station; must be >= 1.
+    /// Target station spacing along the centreline, XY units; must be finite and >= 0. Each
+    /// segment is cut into ceil(length/along) equal parts (a ratio within a tiny tolerance of
+    /// an integer is snapped to it).
     double along = 0.0;
-    Text tag;
+    Text tag; ///< Label copied to PatchMesh::tag and to every generated quad.
 };
 
 /*! \brief Two open bank polylines with independently supplied directions.
@@ -56,25 +65,39 @@ struct SweptPatch {
  *  Positive along subdivides that union to the target spacing; zero retains
  *  only the union. This is normalized arc correspondence, not surveyed stations. */
 struct BankPairPatch {
+    /// \var bankA
+    /// \brief First bank: open polyline in XY units with >= 2 finite points, no repeated
+    /// consecutive vertex and distinct ends; either direction.
+    /// \var bankB
+    /// \brief Second bank, same rules. The banks and the two end connectors must form one
+    /// simple outline; generation may reverse or swap the banks.
     Vector<Point2> bankA, bankB;
-    int across = 0;
+    int across = 0; ///< Quads across between the banks at every station; must be >= 1.
+    /// Target station spacing, XY units, measured on the longer bank; must be finite and >= 0.
+    /// Each interval of the station union is cut into ceil(advance/along) parts (a ratio within
+    /// a tiny tolerance of an integer is snapped to it).
     double along = 0.0;
-    Text tag;
+    Text tag; ///< Label copied to PatchMesh::tag and to every generated quad.
 };
 
 /*! \brief A polyline through a patch's vertices that must be reported as
  *  mesh edges with a marker — a conduit running along a strip's middle row. */
 struct PatchLine {
     Vector<int> path; ///< Local vertex indices, consecutive ones joined by quad edges.
-    int marker = 0;
+    int marker = 0;   ///< Marker given to every edge emitted for the line.
+    /// Label for the emitted edges. When empty the GUI generator resolves one from #marker;
+    /// the native job keeps only the marker.
     Text tag;
 };
 
 /*! \brief A generated patch in local indices. Quads are emitted CCW. */
 struct PatchMesh {
+    /// Vertex positions, XY units, indexed locally by #quads, #boundarySegments and #lines.
+    /// No elevations are stored.
     Vector<Point2> xy;
     Vector<MeshTriangle> quads;                   ///< v3 >= 0, local indices.
     Vector<std::pair<int, int>> boundarySegments; ///< Local index pairs around the patch.
+    /// Patch label. The generators copy it to every quad, and validation messages quote it.
     Text tag;
     /*! Interior lines emitted as MeshResult::boundaryEdges with their marker
      *  and tag, and bounding region tags like any constraint. */
@@ -83,6 +106,11 @@ struct PatchMesh {
 
 /*! \brief Input checks. Empty string = valid. */
 Text validate(const StructuredPatch &p);
+/*! \brief Input checks for a swept patch: >= 2 finite centreline points with no repeated
+ *  consecutive vertex, finite width > 0, across >= 1, finite along >= 0, and station, cell
+ *  and boundary counts that fit in int. Folded or overlapping offsets are not detected here
+ *  (makeSweptPatch() checks them). Empty string = valid, otherwise the first problem found;
+ *  the parameter and return value are documented with the definition. */
 Text validate(const SweptPatch &p);
 /*! \brief Requires finite convex CCW quads, consistently shared cell edges,
  *  and one simple boundary matching exactly the outer cell edges. Boundary
@@ -124,13 +152,23 @@ PatchMesh makeBankPairPatch(const BankPairPatch &p, Text *err = nullptr);
  *  not matching, n or m < 1, folded quad). */
 PatchMesh makeTransfinitePatch(const Vector<Vector<Point2>> &sides, int n, int m, const Text &tag,
                                Text *err = nullptr);
+/*! \brief Coons patch on four already-stationed sides that keeps every station exactly.
+ *  \param[in] sides Four cyclic sides, each with >= 2 finite points and nonzero length;
+ *  sides[k] must end exactly where sides[(k+1)%4] starts. Sides 0 and 2 (and 1 and 3) need
+ *  equal point counts: station i of side 0 faces station n-i of side 2, and station j of
+ *  side 1 faces station m-j of side 3.
+ *  \param[in] tag Label copied to the patch and to every quad.
+ *  \param[out] err Optional; set on failure and left unchanged on success.
+ *  \return Patch of n = sides[0].size()-1 by m = sides[1].size()-1 CCW quads whose boundary
+ *  vertices are exactly the given stations and whose interior comes from Coons interpolation;
+ *  an empty PatchMesh on invalid input or when the full patch fails validate(). */
 // Four already-stationed cyclic sides. Opposite side counts must agree.
 // Retains every boundary coordinate exactly; shared owners can reuse/reverse
 // one canonical sequence. No independent boundary resampling occurs.
 PatchMesh makeTransfinitePatchAtStations(const Vector<Vector<Point2>> &sides, const Text &tag,
                                          Text *err = nullptr);
 
-/*! \brief Split a CCW ring at the four \p corners (ring vertex indices, ring
+/*! \brief Split a ring (either winding) at the four \p corners (ring vertex indices, ring
  *  order) into polyline sides, choose n = max(1, round(mean(len0, len2)/h)),
  *  m likewise from sides 1/3, and call the polyline overload. */
 PatchMesh makeMappedPatch(const Polygon &ring, const Vector<int> &corners, double h,

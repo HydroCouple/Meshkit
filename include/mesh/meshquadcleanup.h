@@ -49,18 +49,25 @@
 namespace mesh
 {
 
+/*! \brief Policy for cleanupAndSmoothQuads(). */
 struct QuadCleanupOptions {
+    /// Quads produced by a doublet merge or diagonal swap must pass these bounds; smoothing
+    /// uses their scaled-Jacobian floor and aspect cap (see QuadQualityBounds).
     QuadQualityBounds bounds;
-    bool removeDoublets = true;
-    bool diagonalSwaps = true;
-    int smoothingIterations = 10;
+    bool removeDoublets = true; ///< Merge the two quads around each movable doublet vertex.
+    bool diagonalSwaps = true;  ///< Re-diagonalise quad pairs when it lowers valence error.
+    int smoothingIterations = 10; ///< Jacobi smoothing sweeps after topology; <= 0 = none.
+    /// Maximum doublet + swap rounds; stops early when a round changes nothing; <= 0 = none.
     int topologyPasses = 3;
 };
 
+/*! \brief Counts reported by cleanupAndSmoothQuads(). */
 struct QuadCleanupStats {
-    int doubletsRemoved = 0;
-    int diagonalSwaps = 0;
+    int doubletsRemoved = 0; ///< Doublet vertices removed (each merges two quads into one).
+    int diagonalSwaps = 0;   ///< Quad-pair diagonal swaps adopted.
     int verticesMoved = 0; ///< Accepted moves summed over iterations.
+    /// Smoothing moves refused by the quality guard or reverted after the simultaneous apply,
+    /// summed over iterations (a vertex can count once per iteration).
     int movesRejected = 0;
 };
 

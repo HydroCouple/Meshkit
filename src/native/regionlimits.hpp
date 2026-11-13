@@ -7,6 +7,12 @@ namespace meshkit::native_detail
 {
 // AABB bounds intentionally over-refine concave/holed regions. Every footprint
 // touching a prescribed region receives its cap, even after a quad fallback.
+/**
+ * @brief Bounding-volume hierarchy over quad-region bounding boxes that answers the smallest
+ * region spacing touching a footprint.
+ *
+ * Owns copies of the boxes and spacings; keeps no reference to its inputs.
+ */
 class RegionLimits
 {
     struct Entry {
@@ -44,6 +50,13 @@ class RegionLimits
     }
 
 public:
+    /**
+     * @brief Index every region that has a positive spacing and a non-empty ring.
+     * @param[in] regions Borrowed regions; each ring's bounding box is stored with its spacing.
+     * @param[in,out] work Budget charged while building.
+     * @throws Stop `region_size` (status Infeasible) for a nonfinite or negative spacing, or
+     * from work.
+     */
     RegionLimits(const std::vector<plan::QuadRegion> &regions, Work &work)
     {
         for (const auto &r : regions) {
@@ -56,6 +69,13 @@ public:
         if (!entries.empty())
             build(0, int(entries.size()), work);
     }
+    /**
+     * @brief Smallest spacing among indexed regions whose box meets a footprint.
+     * @param[in] bounds Footprint box in XY units; touching counts (see meets()).
+     * @param[in,out] work Budget charged per visited node.
+     * @return Spacing in XY units, or 0 when no indexed region box meets bounds.
+     * @throws Stop from work.
+     */
     double minimum(const Box2 &bounds, Work &work) const
     {
         double h = 0;

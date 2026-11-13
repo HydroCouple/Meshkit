@@ -40,8 +40,12 @@ namespace mesh
  *  corner0→corner3 (and corner1→corner2). */
 struct StructuredPatch {
     QVector<QPointF> corners; ///< Exactly 4, cyclic.
+    /** @var n
+     *  Quads along corner0→corner1; must be >= 1 (the default 0 fails validate()). */
+    /** @var m
+     *  Quads along corner0→corner3; >= 1, and (n+1)(m+1) must fit an int index. */
     int n = 0, m = 0;
-    QString tag;
+    QString tag; ///< Copied verbatim to PatchMesh::tag and to every quad's tag.
 };
 
 /*! \brief Swept patch: the centreline is offset ±width/2 (mitred at interior
@@ -50,10 +54,10 @@ struct StructuredPatch {
  *  vertices are kept); 0 = one station per centreline vertex. */
 struct SweptPatch {
     QVector<QPointF> centreline; ///< >= 2 points.
-    double width = 0.0;
-    int across = 0;
-    double along = 0.0;
-    QString tag;
+    double width = 0.0;  ///< Full strip width in XY units; must be finite and > 0.
+    int across = 0;      ///< Quads across the strip at every station; must be >= 1.
+    double along = 0.0;  ///< Target station spacing in XY units; finite >= 0 (0 = vertices).
+    QString tag;         ///< Copied verbatim to PatchMesh::tag and to every quad's tag.
 };
 
 /*! \brief Two open bank polylines with independently supplied directions.
@@ -62,26 +66,30 @@ struct SweptPatch {
  *  Positive along subdivides that union to the target spacing; zero retains
  *  only the union. This is normalized arc correspondence, not surveyed stations. */
 struct BankPairPatch {
+    /** @var bankA
+     *  First bank: open polyline of >= 2 finite points with no repeated consecutive point. */
+    /** @var bankB
+     *  Second bank, same rules; must not touch or cross bankA. Either direction is accepted. */
     QVector<QPointF> bankA, bankB;
-    int across = 0;
-    double along = 0.0;
-    QString tag;
+    int across = 0;     ///< Quads between the banks at every station; must be >= 1.
+    double along = 0.0; ///< Target station spacing in XY units; finite >= 0 (0 = union only).
+    QString tag;        ///< Copied to the generated patch and its quads.
 };
 
 /*! \brief A polyline through a patch's vertices that must be reported as
  *  mesh edges with a marker — a conduit running along a strip's middle row. */
 struct PatchLine {
     QVector<int> path; ///< Local vertex indices, consecutive ones joined by quad edges.
-    int marker = 0;
-    QString tag;
+    int marker = 0;    ///< Copied to each emitted MeshEdge::marker.
+    QString tag; ///< Edge tag; empty = MeshGenerator resolves it from marker's constraint tag.
 };
 
 /*! \brief A generated patch in local indices. Quads are emitted CCW. */
 struct PatchMesh {
-    QVector<QPointF> xy;
+    QVector<QPointF> xy; ///< Vertex coordinates (caller XY units); local index = position.
     QVector<MeshTriangle> quads;               ///< v3 >= 0, local indices.
     QVector<QPair<int, int>> boundarySegments; ///< Local index pairs around the patch.
-    QString tag;
+    QString tag; ///< Patch tag; MeshGenerator gives it to stitched quads whose own tag is empty.
     /*! Interior lines emitted as MeshResult::boundaryEdges with their marker
      *  and tag, and bounding region tags like any constraint. */
     QVector<PatchLine> lines;
@@ -89,6 +97,13 @@ struct PatchMesh {
 
 /*! \brief Input checks. Empty string = valid. */
 QString validate(const StructuredPatch &p);
+/**
+ * @brief Check a swept patch's inputs and its representable station, cell and boundary counts.
+ * @param[in] p Patch to check, unchanged: >= 2 finite centreline points with no repeated
+ * consecutive point, finite width > 0, across >= 1 and finite along >= 0, in one XY unit.
+ * @return Empty string when valid, otherwise the first diagnostic. Offset folding and global
+ * self-overlap are not checked here; makeSweptPatch() detects them after generation.
+ */
 QString validate(const SweptPatch &p);
 /*! \brief Requires finite convex CCW quads, consistently shared cell edges,
  *  and one simple boundary matching exactly the outer cell edges. Boundary
@@ -130,6 +145,16 @@ PatchMesh makeBankPairPatch(const BankPairPatch &p, QString *err = nullptr);
  *  not matching, n or m < 1, folded quad). */
 PatchMesh makeTransfinitePatch(const QVector<QVector<QPointF>> &sides, int n, int m,
                                const QString &tag, QString *err = nullptr);
+/**
+ * @brief Coons patch whose boundary vertices are exactly the given side stations.
+ * @param[in] sides Four cyclic polylines c0→c1, c1→c2, c2→c3, c3→c0, each with >= 2 finite
+ * points; sides 0/2 and 1/3 need equal point counts, and each side's last point must equal
+ * the next side's first exactly. n = sides[0].size() - 1, m = sides[1].size() - 1.
+ * @param[in] tag Copied verbatim to the patch and every quad.
+ * @param[out] err Optional; receives the diagnostic, or an empty string on success.
+ * @return Patch of (n+1)(m+1) vertices and n·m CCW quads (either input winding), or an empty
+ * PatchMesh on invalid input or a folded/invalid result.
+ */
 // Four already-stationed cyclic sides. Opposite side counts must agree.
 // Retains every boundary coordinate exactly; shared owners can reuse/reverse
 // one canonical sequence. No independent boundary resampling occurs.

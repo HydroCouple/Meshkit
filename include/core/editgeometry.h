@@ -240,8 +240,8 @@ struct RingPolygon {
 
 /*! \brief Validity classes for a RingPolygon (in-house checks, no GEOS). */
 enum class RingValidity {
-    Ok,
-    TooFewVertices,      ///< Exterior or a hole has < 3 vertices.
+    Ok,                  ///< Every check passed.
+    TooFewVertices,     ///< Exterior or a hole has < 3 vertices.
     SelfIntersecting,    ///< Exterior or a hole crosses itself.
     HoleOutsideExterior, ///< A hole escapes / crosses the exterior.
     HolesOverlap         ///< Two holes overlap or nest.

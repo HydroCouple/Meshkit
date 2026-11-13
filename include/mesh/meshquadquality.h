@@ -35,15 +35,19 @@ namespace mesh
  *  legacy tri-pair merge. Defaults are the plan's (§5): hard 60°/120°,
  *  SJ ≥ 0.866, aspect ≤ 2. */
 struct QuadQualityBounds {
-    double minAngleDeg = 60.0;
-    double maxAngleDeg = 120.0;
+    double minAngleDeg = 60.0;  ///< Smallest allowed interior angle, degrees (inclusive).
+    double maxAngleDeg = 120.0; ///< Largest allowed interior angle, degrees (inclusive).
+    /// Smallest allowed scaled Jacobian (min corner sine, inclusive). Smoothing in
+    /// cleanupAndSmoothQuads() keeps each quad at or above min(its prior value, this).
     double minScaledJacobian = 0.866;
     double maxAspect = 2.0; ///< longest / shortest side (opposite-side means). <= 0 = unbounded.
 };
 
+/*! \brief Shape metrics of one quadrilateral, as computed by quadQuality(). Default values
+ *  (convex = false, area = 0) are also what invalid or degenerate input returns. */
 struct QuadQuality {
-    double minAngleDeg = 0.0;
-    double maxAngleDeg = 0.0;
+    double minAngleDeg = 0.0; ///< Smallest unsigned interior angle, degrees.
+    double maxAngleDeg = 0.0; ///< Largest unsigned interior angle, degrees.
     double scaledJacobian = 0.0; ///< min_i sin(theta_i), signed (negative = folded).
     double rectangularity = 0.0; ///< 1 - max_i |theta_i - 90| / 90.
     double aspect = 1.0;         ///< mean(s0,s2) vs mean(s1,s3), >= 1.

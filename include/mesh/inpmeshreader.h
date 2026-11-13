@@ -88,6 +88,13 @@ struct InpMeshReadResult {
  */
 [[nodiscard]] bool unitsHeaderIsSI(const QString &unitsHeader);
 
+/**
+ * @brief Stateless reader for the `[2D_*]` mesh sections of a SWMM `.inp` (inline or via
+ * `[2D_MESH_FILE]`), the counterpart of InpMeshWriter.
+ *
+ * Its single static member holds no state between calls. Values are returned in authored
+ * units with no SI conversion or reprojection.
+ */
 class InpMeshReader
 {
 public:

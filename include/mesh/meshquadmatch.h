@@ -46,21 +46,27 @@ namespace mesh
 /*! \brief Four vertex ids in cyclic (CCW) order, indexed into the generated
  *  mesh passed to pairTrianglesIntoQuads(). */
 struct QuadTemplate {
+    /// Corner vertex ids; a template with any out-of-range (default -1) or repeated id is
+    /// skipped. A clockwise result is flipped to CCW.
     int v[4] = {-1, -1, -1, -1};
 };
 
+/*! \brief Policy for pairTrianglesIntoQuads(). */
 struct QuadPairingOptions {
+    /// Every template or gap quad must pass quadAcceptable() under these bounds; quadScore()
+    /// with them ranks templates and drives the polish.
     QuadQualityBounds bounds;
     bool gapPairing = true; ///< Run blossom on the residual (false = templates only; tests).
     bool polish = true;     ///< Alternating-4-cycle improvement after blossom.
 };
 
+/*! \brief Counts reported by pairTrianglesIntoQuads(). */
 struct QuadPairingStats {
-    int templateQuads = 0;
+    int templateQuads = 0; ///< Quads formed from templates (step 1).
     int templatesSkipped = 0; ///< Split, already used, or failed the bounds.
-    int gapQuads = 0;
+    int gapQuads = 0; ///< Quads formed by blossom matching of the residual (step 2).
     int leftoverTriangles = 0; ///< Region triangles still triangles on exit.
-    int polishSwaps = 0;
+    int polishSwaps = 0; ///< Score-improving alternating-4-cycle swaps (at most 5 passes).
 };
 
 /**

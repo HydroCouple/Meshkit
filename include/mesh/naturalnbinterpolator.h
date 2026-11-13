@@ -47,10 +47,26 @@
 namespace mesh
 {
 
+/**
+ * @brief Natural-neighbour (Sibson or Laplace) interpolator over scattered (x, y, z) seeds.
+ *
+ * build() copies and triangulates the seeds; interpolate() and weightsAt() then answer
+ * queries inside the seeds' convex hull and return NaN / false elsewhere. The instance owns
+ * all its storage. Queries mutate internal caches, so one instance must not be queried from
+ * several threads at once (see the file comment).
+ */
 class NaturalNeighbourInterpolator
 {
 public:
-    enum class Variant { Sibson, Laplace };
+    /**
+     * @brief Natural-neighbour coordinate construction used by interpolate() and weightsAt():
+     * Sibson (default) uses area-stealing coordinates, Laplace uses Voronoi facet length
+     * divided by the distance to the seed.
+     */
+    enum class Variant {
+        Sibson, ///< Area-stealing (Sibson) coordinates; the default.
+        Laplace ///< Voronoi facet length divided by the distance to the seed.
+    };
 
     /**
      * @brief Construct an invalid empty interpolator using the Sibson variant.

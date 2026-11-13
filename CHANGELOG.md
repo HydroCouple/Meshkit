@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+Documentation:
+
+- A documentation site, built by a new Documentation workflow and published
+  to GitHub Pages from `main`: Doxygen reference for the C++ library, with the
+  project's Markdown pages, and Sphinx documentation for the Python package
+  (install, quickstart, guides to requests, results, source preparation and
+  files, and the API reference). Both builds fail on warnings.
+- `python/meshkit/_meshkit.pyi`: a type stub documenting the native
+  extension's functions, `MeshResult` and `Job`.
+- Doxygen comments for every class, function, member, enum value and namespace
+  of the C++ library (about 1,300 were undocumented), written from the
+  implementation; the Documentation workflow now fails on undocumented code.
+- Corrected existing comments that disagreed with the code, among them: ten
+  `@file` names that pointed at the old Qt header names; `Limits::maxWork`
+  (20 billion applies only to the job's own counter); `SizeField::build`
+  (a failed build can leave `isValid()` true); `QualityReport::capped` and
+  `blockedByFixed`; `MeshEdgeBC::operator==` (also compares `wallDrag`);
+  `QuadRegionMode::Submapped` and `Free` (classifications that the generator
+  meshes like `Mapped`); and `NATIVE_API.md` on the work limit.
+
 ## 0.2.0 — first standalone release
 
 MeshKit moves out of the OpenSWMM GUI repository (`libraries/meshkit`) into its

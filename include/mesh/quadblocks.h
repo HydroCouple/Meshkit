@@ -33,7 +33,11 @@ struct MeshResult;
 /*! \brief Local cell size on a regular grid; NaN marks unusable cells. */
 struct QuadBlockGrid {
     QPointF origin; ///< Lower-left corner of cell (0, 0).
-    double pitch = 0.0;
+    double pitch = 0.0; ///< Square cell side in planar mesh units; must be > 0 to be valid.
+    /** @var cols
+     *  Cells along +x; cell (c, r) is h[r * cols + c]. */
+    /** @var rows
+     *  Cells along +y. */
     int cols = 0, rows = 0;
     QVector<float> h; ///< Row-major, cols x rows.
 
@@ -50,11 +54,14 @@ struct QuadBlockGrid {
     }
 };
 
+/*! \brief Policy for placeQuadBlocks(). */
 struct QuadBlockOptions {
     double minSpacing = 0.0; ///< Blocks finer than this are not worth a patch.
     double bandRatio = 1.3;  ///< Size bands are powers of this.
+    /// Fewest quads of the block spacing per rectangle side (each side also spans >= 3 grid
+    /// cells before it is trimmed to whole spacings).
     int minQuadsPerSide = 4;
-    int maxBlocks = 50000;
+    int maxBlocks = 50000; ///< Cap on regions returned; <= 0 returns none.
 };
 
 /**

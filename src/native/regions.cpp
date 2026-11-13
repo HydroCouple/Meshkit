@@ -1,7 +1,7 @@
 #include "meshkit/regions.hpp"
 #include "meshkit/cdt.hpp"
 /**
- * @file      meshquadregion.cpp
+ * @file      regions.cpp
  * @brief     PSLG quad regions (workplans/QUAD_MESHING_REDESIGN_PLAN_2026-09-06.md §3, §4.1):
  *            closed polygons inside the meshing domain where quadrilateral cells are prioritised.
  * @author    Caleb Buahin <caleb.buahin@gmail.com>

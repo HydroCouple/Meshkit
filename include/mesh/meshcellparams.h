@@ -47,19 +47,22 @@ struct CellParamSpec {
      *  surface fed by this registry (attribute table, mesh-editing toolbar,
      *  property adapter, assign dialog) can pick a combo editor for it from
      *  one place. */
-    enum class Kind { Double, Enum };
+    enum class Kind {
+        Double, ///< Real value edited with a spin box (min, max, step, decimals).
+        Enum    ///< Integer code edited with a combo box labelled by enumLabels.
+    };
 
     QByteArray key;          ///< stable id, e.g. "mannings", "initDepth"
     QString label;           ///< combo / property label, already translated
     QString prefix;          ///< spin-box prefix, e.g. "n=" ({} for none)
     bool lengthUnit = false; ///< true → append the project depth unit
-    double min = 0.0;
-    double max = 1.0;
-    double step = 0.01;
-    double defaultValue = 0.0;
-    int decimals = 4;
+    double min = 0.0;          ///< Editor minimum in stored units (Kind::Enum: smallest integer).
+    double max = 1.0;          ///< Editor maximum in stored units (Kind::Enum: largest integer).
+    double step = 0.01;        ///< Spin-box single step.
+    double defaultValue = 0.0; ///< Editor's initial value; never substituted on reads.
+    int decimals = 4;          ///< Spin-box decimal places.
     bool enabled = true; ///< false → unavailable in this generic editor
-    QString tooltip;
+    QString tooltip;     ///< Translated tooltip text; may be empty.
     /*! Value kind. New members stay at the END of the struct: the registry
      *  builds its entries with positional aggregate initialisers, which fall
      *  back to these default member initialisers for anything they omit. */

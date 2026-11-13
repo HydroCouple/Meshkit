@@ -1,7 +1,7 @@
 #include "meshkit/quadquality.hpp"
 #include "meshkit/detail/planmodel.hpp"
 /**
- * @file      meshquadregion.h
+ * @file      regions.hpp
  * @brief     PSLG quad regions (workplans/QUAD_MESHING_REDESIGN_PLAN_2026-09-06.md §3, §4.1):
  *            closed polygons inside the meshing domain where quadrilateral cells are prioritised.
  * @author    Caleb Buahin <caleb.buahin@gmail.com>
@@ -28,6 +28,7 @@
 namespace meshkit::plan
 {
 
+/*! \brief Requested meshing scheme for a QuadRegion's interior. */
 enum class QuadRegionMode {
     Auto,         ///< classifyQuadRegion() decides: Mapped → Submapped → Free.
     Mapped,       ///< Four logical sides (polylines) → transfinite quads. Needs 4 corners.
@@ -36,7 +37,12 @@ enum class QuadRegionMode {
     TrianglesOnly ///< Region ring is still a constraint loop, interior stays triangles.
 };
 
+/*! \brief A closed polygon whose interior should be meshed with quadrilaterals, with its
+ *  holes, scheme, spacing and tagging policy. Coordinates and lengths are in mesh XY units. */
 struct QuadRegion {
+    /*! Cell region id (Cell::region) the native job writes on quads of patches planned from
+     *  this region; 0 = none. The job then spreads nonzero ids to every cell of the same
+     *  constrained component and fails on conflicting ids. */
     std::int32_t attribute = 0;
     Polygon ring; ///< Closed (last == first optional), simple, any orientation.
     /*! Areas subtracted from \ref ring (QUAD_EVERYWHERE_PLAN_2026-09-07.md §3.1):
@@ -51,12 +57,18 @@ struct QuadRegion {
      *  and the "region lies inside exactly one domain ring" validation is skipped
      *  because the region *is* that ring. */
     bool isBackground = false;
+    /*! Requested scheme (default Auto). The native joint planner (planQuadRegions()) treats
+     *  every mode except TrianglesOnly as a four-sided mapped-patch candidate;
+     *  validateQuadRegion() allows directional spacing only with Auto or Mapped. */
     QuadRegionMode mode = QuadRegionMode::Auto;
     bool requireMapped = false;      ///< Explicit hard requirement, used by unified planning.
     bool automaticCandidate = false; ///< Derived candidate; no outline constraint on fallback.
     double spacing = 0.0; ///< Target quad edge length h; 0 = derive from the size field / max area.
     bool directionalSpacing =
         false; ///< Explicit Mapped spacing; failure must not fall back to isotropic cells.
+    /*! Spacing for the pair of opposite mapped sides more nearly parallel to the
+     *  mappedAlongAngleDeg axis; positive and finite in mesh units, used only when
+     *  directionalSpacing. */
     double hAlong = 0.0,
            hAcross =
                0.0; ///< Positive spacings in mesh CRS units, used only when directionalSpacing.
@@ -65,6 +77,8 @@ struct QuadRegion {
     double aspectMax =
         -1.0; ///< Free: opposite-side mean ratio cap; < 0 inherits global, 0 unbounded, >= 1 explicit.
     bool hasAlignAngle = false; ///< Free: constant cross field at alignAngleDeg (from +x, CCW).
+    /*! Free: cross-field angle in degrees from +x, counterclockwise; meaningful only when
+     *  hasAlignAngle. No native MeshKit algorithm reads it; adapters carry it through. */
     double alignAngleDeg = 0.0;
     Vector<Point2> alignGuide; ///< Free: optional polyline the field aligns to (streets, channels).
     Vector<int> corners;       ///< Mapped: 4 ring vertex indices in ring order; empty = auto-pick.

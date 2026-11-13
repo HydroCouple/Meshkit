@@ -25,22 +25,87 @@ namespace mesh
 // Shared by project settings, Preferences and the generation dialog.
 // Physical lengths are SI; absence means no maximum, inherit minimum,
 // automatic tolerance, or match-minimum averaging respectively.
+/**
+ * @brief Unit-independent mesh resolution choices (lengths in SI metres) with JSON
+ * round-trip, legacy migration and validation. Plain value type; validate() is never applied
+ * implicitly.
+ */
 struct ResolutionSettings {
+    /// Minimum target cell size, metres (default 6.096 m = 20 ft); finite in (0, 1e12].
     double minimumM = 6.096;
+    /** @var maximumM
+     *  Maximum target cell size, metres; absent = no limit, else >= minimumM. */
+    /** @var featureM
+     *  Target size near selected features when refineFeatures; absent = minimumM. With
+     *  refineFeatures it must lie within [minimumM, maximumM]. */
+    /** @var toleranceM
+     *  Terrain elevation tolerance, vertical metres (JSON "elevationToleranceM"); absent =
+     *  automatic estimate. */
+    /** @var breaklineToleranceM
+     *  Terrain break-line detection tolerance, vertical metres; absent = automatic. */
+    /** @var averagingM
+     *  DEM averaging scale for the Averaged reference, metres; absent = minimumM. */
+    /** @var minimumBreaklineLengthM
+     *  Shortest terrain break line to keep, metres; absent = the caller's default. */
     std::optional<double> maximumM, featureM, toleranceM, breaklineToleranceM, averagingM,
         minimumBreaklineLengthM;
+    /// Cap on terrain break lines, 0..10,000,000; 0 = let the caller choose automatically.
     int maxBreaklines = 0;
     int coarsenPasses = 0; ///< Absent in older projects: retain their original mesh behaviour.
+    /// Size transition (growth) rate between neighbouring targets; finite and >= 1.05.
     double transition = 2.0;
-    enum class Sizing { Legacy, Verified, Strict } sizing = Sizing::Legacy;
-    enum class CellPlanning { Legacy, Unified } cellPlanning = CellPlanning::Legacy;
+    /** @enum Sizing
+     *  Sizing rules: Legacy targets; Verified sizes (report exceptions); Strict sizes (refuse
+     *  unmet limits). */
+    /** @var sizing
+     *  Sizing rules in force (default Legacy). Non-Legacy is required by Unified planning,
+     *  ResolutionAware coarsening, size-scaled terrain tolerance and minimumEdgeM. */
+    enum class Sizing {
+        Legacy,   ///< Legacy size targets.
+        Verified, ///< Verified sizes; unmet limits are reported as exceptions.
+        Strict    ///< Verified sizes; unmet limits refuse the mesh.
+    } sizing = Sizing::Legacy;
+    /** @enum CellPlanning
+     *  Quad patch planning: Legacy per-region routing, or Unified joint planning. */
+    /** @var cellPlanning
+     *  Patch planning policy (default Legacy); Unified requires non-Legacy sizing. */
+    enum class CellPlanning {
+        Legacy, ///< Per-region quad routing.
+        Unified ///< Joint planning of all quad patches.
+    } cellPlanning = CellPlanning::Legacy;
+    /// Separate floor on delivered edge length, metres; absent = none. Needs non-Legacy sizing.
     std::optional<double> minimumEdgeM;
+    /// Coarsening removal order (default LegacyFlatness); ResolutionAware needs non-Legacy
+    /// sizing.
     CoarseningOrder coarseningOrder=CoarseningOrder::LegacyFlatness;
+    /// Terrain tolerance rule (constant or scaled with target size); its sizes and tolerances
+    /// are metres. Must satisfy TerrainTolerancePolicy::valid() and stay <= 1e12.
     TerrainTolerancePolicy terrainTolerancePolicy; // SI metres, independent of display units.
 
+    /** @var refineFeatures
+     *  Refine to featureM near selected features (default false). */
+    /** @var alignTerrain
+     *  Detect terrain break lines and align mesh edges to them (default true). */
     bool refineFeatures = false, alignTerrain = true;
-    enum class Terrain { Adaptive, Legacy, Off } terrain = Terrain::Adaptive;
-    enum class Reference { Averaged, Full, Direct } reference = Reference::Averaged;
+    /** @enum Terrain
+     *  Terrain refinement method: Adaptive elevation error, Legacy block sizing, or Off. */
+    /** @var terrain
+     *  Terrain refinement method (default Adaptive); TargetSize tolerance needs Adaptive. */
+    enum class Terrain {
+        Adaptive, ///< Refine by elevation error against the terrain.
+        Legacy,   ///< Legacy block-based terrain sizing.
+        Off       ///< No terrain refinement.
+    } terrain = Terrain::Adaptive;
+    /** @enum Reference
+     *  Terrain reference: Averaged DEM, Full DEM, or Direct (full DEM read without a local
+     *  copy). */
+    /** @var reference
+     *  Terrain reference DEM (default Averaged). */
+    enum class Reference {
+        Averaged, ///< Averaged DEM.
+        Full,     ///< Full-resolution DEM.
+        Direct    ///< Full DEM read directly, without a local copy.
+    } reference = Reference::Averaged;
 
     /**
      * @brief Check numeric mesh-resolution settings without modifying or normalizing them.

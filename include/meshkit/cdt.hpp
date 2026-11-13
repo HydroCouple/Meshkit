@@ -1,5 +1,5 @@
 /**
- * @file      meshcdt.h
+ * @file      cdt.hpp
  * @brief     Constrained Delaunay triangulation kernel (workplans/MESH_OVERHAUL_PLAN_2026-09-29.md
  *            Stage 4).
  * @author    Caleb Buahin <caleb.buahin@gmail.com>
@@ -44,21 +44,52 @@
 namespace meshkit
 {
 
+/**
+ * @brief Constrained Delaunay triangulation kernel with quality and terrain refinement and
+ * optional coarsening (see the file comment for the algorithms).
+ *
+ * @tparam Storage Container and geometry vocabulary: detail::StandardStorage (standard C++
+ * containers, std::string) for ConstrainedDelaunay, or the Qt storage (QVector, QPointF,
+ * QString) used by the Qt mesh library.
+ *
+ * Typical use: build() the point set, insertConstraint() each segment, remove the exterior,
+ * holes and other regions, optionally refineQuality(), then read vertices() and the alive
+ * entries of triangles(). Vertex ids index vertices(): unique input points first, then the
+ * three super-triangle vertices (inputVertexCount() .. inputVertexCount() + 2), then
+ * vertices inserted later. All coordinates share one Cartesian XY frame; the kernel performs
+ * no unit conversion. An instance has no internal synchronization: mutating calls need
+ * exclusive access and const calls must not race a mutation. The exact-predicate tables are
+ * initialised once per process under std::call_once.
+ */
 template <class Storage> class BasicConstrainedDelaunay
 {
 public:
+    /// 2D point type of the storage (meshkit::Point2 or QPointF), in XY plane units.
     using Point = typename Storage::Point;
+    /// Axis-aligned XY rectangle type of the storage; passed to footprint callbacks.
     using Box = typename Storage::Box;
+    /// Text type of errorMsg() (std::string or QString).
     using String = typename Storage::String;
+    /// Point container accepted by build() (std::vector<Point2> or QVector<QPointF>).
     using PointInput = typename Storage::PointInput;
+    /// Dynamic array type of the storage, used for owned arrays and read-out buffers.
     template <class T> using Vector = typename Storage::template Vector<T>;
+    /// Hash map type of the storage, used for internal segment bookkeeping.
     template <class K, class V> using Hash = typename Storage::template Hash<K, V>;
+    /// Hash multimap type of the storage, used for overlapping-segment bookkeeping.
     template <class K, class V> using MultiHash = typename Storage::template MultiHash<K, V>;
+    /// Hash set type of the storage (QualityOptions::protectedVertices, fixed subsegments).
     template <class K> using Set = typename Storage::template Set<K>;
+    /**
+     * @brief One triangle slot of triangles(). Indices in v and adj refer to vertices() and
+     * triangles() respectively. Until the next build(), removed triangles stay as dead slots.
+     */
     struct Triangle {
         int v[3];   ///< Counter-clockwise.
         int adj[3]; ///< Neighbour across the edge opposite v[i] (v[i+1], v[i+2]); -1 = none.
         bool constrained[3]; ///< Edge opposite v[i] is a constraint.
+        /// False once the slot is removed (removeExterior(), removeSuperTriangles(), region
+        /// removal, vertex removal); readers must skip dead slots.
         bool alive;
     };
 
@@ -87,6 +118,11 @@ public:
      * @param[out] vertexOfPoint Optional borrowed mapping resized to input count. Each processed
      * input maps to first-occurrence unique vertex ID; early failure may retain partial mapping.
      * Not retained.
+     * @param[in] cancelled Optional callable polled before work starts, while sorting the
+     * insertion order and every 4096 insertions; returning true stops the build, which then
+     * returns false with the diagnostic "cdt: cancelled". Not retained.
+     * @param[in] progress Optional callable invoked every 4096 insertions with the number of
+     * points inserted so far. Not retained.
      * @return True after all points inserted, false for nonfinite input, <3 distinct points or
      * failed location, with errorMsg diagnostic. Existing state is cleared/replaced before
      * validation; failure is not transactional and may leave partial arrays. This implementation
@@ -204,7 +240,8 @@ public:
      * slots/hints allocated. Allocates stacks/fans, mutates alive flags, no
      * rollback/cancellation/IO or retained input references.
      *
-     * @details Drop the region (constraint-bounded component) containing \p p.
+     * @details Drop the region (constraint-bounded component) to the left of the constrained
+     * edge \p a -> \p b.
      */
     int removeRegionLeftOf(int a, int b);
     /**
@@ -233,19 +270,56 @@ public:
          *  exceeds the equilateral triangle of side h(centroid). Null, or
          *  <= 0 at a point, = no size bound there. */
         std::function<double(double, double)> hAt;
+        /** @brief Optional per-triangle area cap in squared XY units. Receives a pointer to
+         *  the triangle's three vertex positions, valid only during the call. A result > 0
+         *  makes a larger triangle a size target and rejects larger coarsening replacements;
+         *  <= 0 or NaN means no cap. During sizing repair it also allows a centroid insertion
+         *  when an over-cap triangle's size point is blocked only by fixed edges. */
         std::function<double(const Point *)> maximumAreaForTriangle;
+        /** @brief Sizing-repair only. When >= 1, a live triangle is a size target if the
+         *  square root of its area over a live, non-super neighbour's area, or its
+         *  equilateral-equivalent edge length over fixedNeighbourSize(), exceeds this ratio.
+         *  Below 1 (default 0) disables both checks. */
         double maximumAdjacentRatio = 0;
+        /** @brief Sizing-repair only (needs maximumAdjacentRatio >= 1). Receives the vertex
+         *  ids of a triangle edge and returns the linear size, in XY units, of a cell outside
+         *  this triangulation across that edge (e.g. a fixed patch quad); <= 0 skips the edge.
+         */
         std::function<double(int, int)> fixedNeighbourSize;
+        /**
+         * @var sizingRepairPasses
+         * @brief Passes of bounded size repair after smoothing, terrain insertion and
+         * coarsening; clamped to [0, 3], 0 = off. Each pass requeues every live triangle and
+         * stops early when it inserts nothing. Skipped after a cap or cancellation.
+         * @var maximumSizingRepairInsertions
+         * @brief Cap on vertices (segment splits included) inserted by sizing repair;
+         * reaching it sets QualityReport::sizingRepairLimited. <= 0 sets that flag at once
+         * and runs no repair pass.
+         */
         int sizingRepairPasses = 0, maximumSizingRepairInsertions = 200000;
         /*! Actual surface error at the reference DEM samples covered by a
          * triangle. Return a failing residual and its source point; NaN means
          * unverified coverage. Elevations are cached per vertex. */
         std::function<double(const Point *, const double *, Point *)> terrainError;
+        /** @brief Reference elevation (Z units) at XY (x, y). Results are cached per vertex
+         *  in terrainElevations(); a non-finite result marks that height unavailable.
+         *  Terrain refinement needs it, terrainError and terrainTolerance > 0. */
         std::function<double(double, double)> terrainElevationAt;
+        /** @brief Allowed terrain residual in Z units; a triangle whose terrainError exceeds
+         *  it is refined. <= 0 (default) disables terrain refinement, and is an invalid
+         *  policy when terrainToleranceForFootprint is set. That callback, when set, replaces
+         *  this value per triangle. */
         double terrainTolerance = 0.0;
+        /// Positive immutable tolerance for a whole footprint box, replacing terrainTolerance.
+        /// A non-positive or non-finite result means unknown and also sets
+        /// QualityReport::invalidPolicy, which stops queue refinement and coarsening.
         std::function<double(const Box &)>
-            terrainToleranceForFootprint; ///< Positive immutable full-footprint tolerance; invalid means unknown.
+            terrainToleranceForFootprint;
 
+        /** @brief Minimum XY distance from a terrain-driven point to existing vertices; the
+         *  spacing used is max(terrainMinSpacing, minEdge), and 0 for both disables the
+         *  check. A witness too close to its own triangle is skipped and left for the final
+         *  terrain counters. */
         double terrainMinSpacing = 0.0;
         /*! Refine size and angle first, then insert terrain points worst
          *  error first until the tolerance or maxTriangles is reached, so a
@@ -265,18 +339,41 @@ public:
          *  without terrain). 0 = off. */
         int smoothingPasses = 0;
         int coarsenPasses = 0; ///< Maximum attempts per free vertex; 0 = off.
+        /** @brief Order of coarsening candidates. LegacyFlatness: coarse Morton tile, then
+         *  flattest terrain star first. ResolutionAware: tile, then lowest
+         *  resolutionRemovalImportance() and size/target density first; it requires
+         *  coarseningTargetSize and positive finite coarseningReferenceSize and
+         *  normalVerticalToXY. Any other value or missing requirement sets
+         *  QualityReport::invalidPolicy and refineQuality() returns without changes. */
         CoarseningOrder coarseningOrder = CoarseningOrder::LegacyFlatness;
         std::function<double(const Box &)>
             coarseningTargetSize; ///< Prescribed size; zero means unbounded, never evolving geometry.
+        /**
+         * @var coarseningReferenceSize
+         * @brief ResolutionAware only: target size in XY units used for a star's priority
+         * when coarseningTargetSize() returns 0 (unbounded). Default 10.
+         * @var normalVerticalToXY
+         * @brief ResolutionAware only: factor applied to elevation differences before facet
+         * normals are compared, converting Z units into XY units. Default 1.
+         */
         double coarseningReferenceSize = 10, normalVerticalToXY = 1;
 
+        /// Coarsening gate: a vertex whose position returns true is never removed. Not
+        /// consulted by insertion or smoothing.
         std::function<bool(const Point &)> protectedLocation;
         Set<int> protectedVertices; ///< Additional template vertices to retain.
         /*! Certified maximum residual INCLUDING coverage, unlike terrainError's
          * refinement witness. Return NaN for unknown coverage. Required for
          * coarsening with terrain; absent means skip coarsening safely. */
         std::function<double(const Point *, const double *)> terrainErrorBound;
+        /** @brief True (default) with minAngleDeg > 0: queue triangles in 32 buckets of
+         *  sin(smallest angle) / sin(minAngleDeg) and refine the worst-shaped first. False:
+         *  one first-in, first-out queue. */
         bool prioritizeQuality = true;
+        /** @brief Cap on liveTriangleCount(), checked before refinement and after every
+         *  insertion. Reaching it sets QualityReport::capped and stops insertion, smoothing,
+         *  terrain placement and sizing repair; coarsening and the final terrain check still
+         *  run. */
         int maxTriangles = std::numeric_limits<int>::max();
         /*! Smallest angle every triangle must reach (degrees); 0 = size only.
          *  High bounds can exhaust the resource/cascade limits; no termination
@@ -296,24 +393,97 @@ public:
          * Callback must not throw or reenter the kernel. */
         std::function<void(const GenerationProgress &)> onProgress;
     };
+    /**
+     * @brief Counters and diagnostics of one refineQuality() call. Not a quality certificate:
+     * see refineQuality() for targets that can remain unmet.
+     */
     struct QualityReport {
+        /**
+         * @var sizingRepairInserted
+         * @brief Vertices (segment splits included) inserted by the sizing-repair stage.
+         * @var sizingRepairPasses
+         * @brief Sizing-repair passes started (at most 3).
+         */
         int sizingRepairInserted = 0, sizingRepairPasses = 0;
+        /// Sizing repair reached maximumSizingRepairInsertions (at once when that is <= 0).
         bool sizingRepairLimited = false;
         int inserted = 0; ///< Vertices added, segment splits included.
-        int segmentSplits = 0;
+        int segmentSplits = 0; ///< Constrained subsegments split; also counted in inserted.
+        /// Bad triangles whose point would encroach constrained subsegments of which none
+        /// could be split: fixed, too short, no longer constrained, midpoint not terrain-clear,
+        /// split failed, or stop requested. During sizing repair such a triangle may still be
+        /// refined by an interior insertion.
         int blockedByFixed =
-            0; ///< Bad triangles left because their point would encroach a fixed edge.
+            0;
+        /**
+         * @var sizeInsertions
+         * @brief Point insertions, excluding segment splits, for a size target (hAt,
+         * maximumAreaForTriangle or sizing-repair ratio).
+         * @var qualityInsertions
+         * @brief Point insertions, excluding segment splits, for the minimum-angle bound.
+         * @var terrainInsertions
+         * @brief Terrain witness points inserted, excluding segment splits.
+         */
         int sizeInsertions = 0, qualityInsertions = 0, terrainInsertions = 0;
+        /**
+         * @var terrainUnresolved
+         * @brief Final check: live triangles whose terrain error still exceeds the tolerance.
+         * Zero when terrain is off or terrainFinalCheck is false; partial or zero after
+         * cancellation.
+         * @var terrainUnknown
+         * @brief Final check: live triangles whose error or tolerance is not finite.
+         */
         int terrainUnresolved = 0, terrainUnknown = 0;
+        /// Final check: largest finite terrain error found, in Z units; 0 when not checked.
         double maxTerrainError = 0.0;
-        bool capped = false; ///< Stopped at maxInsertions.
-        bool cancelled = false;
+        bool capped = false; ///< Stopped at maxInsertions or maxTriangles.
+        bool cancelled = false; ///< QualityOptions::cancelled returned true; edits are kept.
+        /**
+         * @var coarsenRemoved
+         * @brief Free vertices removed by coarsening.
+         * @var coarsenRejectedAngle
+         * @brief Removals refused because a replacement triangle breaks the angle bound.
+         * @var coarsenRejectedSize
+         * @brief Removals refused because a replacement triangle exceeds hAt,
+         * coarseningTargetSize (ResolutionAware) or maximumAreaForTriangle.
+         */
         int coarsenRemoved = 0, coarsenRejectedAngle = 0, coarsenRejectedSize = 0;
+        /**
+         * @var coarsenRejectedTerrain
+         * @brief Removals refused by the terrain checks; includes coarsenHeightRejects.
+         * @var coarsenRejectedEdge
+         * @brief Removals refused because a replacement edge is shorter than the star's
+         * shortest edge.
+         * @var coarsenAttempts
+         * @brief Removal attempts, including stars that could not be retriangulated.
+         */
         int coarsenRejectedTerrain = 0, coarsenRejectedEdge = 0, coarsenAttempts = 0;
+        /**
+         * @var coarsenHeightRejects
+         * @brief Removals refused because the removed vertex's own height misses the
+         * replacement plane by more than the tolerance (or is unknown).
+         * @var coarsenBoundAccepts
+         * @brief Replacement triangles certified by the cached bound without calling
+         * terrainErrorBound.
+         * @var coarsenExactQueries
+         * @brief Calls to QualityOptions::terrainErrorBound.
+         */
         int coarsenHeightRejects = 0, coarsenBoundAccepts = 0, coarsenExactQueries = 0;
+        /// Terrain is active but terrainErrorBound is absent, so coarsening was skipped.
         bool coarsenSkippedTerrain = false;
-        double coarsenSeconds = 0;
+        double coarsenSeconds = 0; ///< Wall-clock seconds spent in the coarsening stage.
+        /**
+         * @var coarsenQueuePeak
+         * @brief Largest size reached by the coarsening priority queue.
+         * @var coarsenPriorityQueries
+         * @brief ResolutionAware only: coarseningTargetSize calls made for queue priorities.
+         */
         std::uint64_t coarsenQueuePeak = 0, coarsenPriorityQueries = 0;
+        /// Options or a callback result were invalid (coarseningOrder requirements,
+        /// terrainToleranceForFootprint without terrain inputs or returning a non-positive or
+        /// non-finite value, negative or non-finite coarseningTargetSize). Found up front,
+        /// refineQuality() returns without changes; found later, queue refinement and
+        /// coarsening stop early.
         bool invalidPolicy = false;
     };
     /**
@@ -392,19 +562,25 @@ public:
 
     // Optional diagnostic provenance. Bits may overlap at coincident inputs;
     // endpoint associations are not a causal explanation of final cell counts.
+    /**
+     * @brief Diagnostic vertex-provenance bits stored by enableProvenance()/addVertexOrigin().
+     * They never affect the triangulation. Domain to Lattice are caller conventions (as used by
+     * the mesh generator); the kernel itself sets Size, Angle and Terrain on refinement
+     * insertions and SegmentSplit on subsegment splits.
+     */
     enum Origin : std::uint32_t {
-        Domain = 1,
-        Hole = 2,
-        Line = 4,
-        Patch = 8,
-        Node = 16,
-        Breakline = 32,
-        Region = 64,
-        Lattice = 128,
-        Size = 256,
-        Angle = 512,
-        Terrain = 1024,
-        SegmentSplit = 2048
+        Domain = 1,       ///< Vertex of a domain-boundary constraint (caller-set).
+        Hole = 2,         ///< Vertex of a hole-boundary constraint (caller-set).
+        Line = 4,         ///< Vertex of another constraint line (caller-set).
+        Patch = 8,        ///< Vertex of a fixed patch constraint (caller-set).
+        Node = 16,        ///< Free input node (caller-set).
+        Breakline = 32,   ///< Vertex of a terrain breakline (caller-set).
+        Region = 64,      ///< Vertex of a region boundary (caller-set).
+        Lattice = 128,    ///< Seeded lattice point inserted by the caller.
+        Size = 256,       ///< refineQuality() insertion for a size target.
+        Angle = 512,      ///< refineQuality() insertion for the minimum-angle bound.
+        Terrain = 1024,   ///< refineQuality() insertion for terrain error.
+        SegmentSplit = 2048 ///< Subsegment split; also inherits endpoints' Domain..Region bits.
     };
     /**
      * @brief Enable/reset optional origin bits for all currently stored vertices. Fills owned
@@ -765,5 +941,7 @@ private:
     std::function<void(int)> m_triangleChanged;
 };
 
+/// Kernel instantiated with standard C++ storage (Point2, Box2, std::string, std::vector-based
+/// containers).
 using ConstrainedDelaunay = BasicConstrainedDelaunay<detail::StandardStorage>;
 } // namespace meshkit

@@ -1,5 +1,7 @@
 # MeshKit for Python
 
+Documentation: <https://www.hydrocouple.org/Meshkit/python/> (guides and API reference).
+
 MeshKit 0.2 builds independently with C++17 and Python headers. No Qt, OpenSWMM,
 GDAL, NumPy headers, binding generator or network fetch is required by its CMake
 build. NumPy is optional at runtime. License: Apache-2.0; robust predicates retain
@@ -26,7 +28,7 @@ meshkit.write("result.mkb", result)      # No replacement unless explicitly requ
 ```
 
 `meshkit.start(request, raster=..., provider_identity=...)` returns a native job
-with `poll()`, `cancel()`, `done`, and `result(timeout_seconds=-1)`. Jobs run without
+with `poll()`, `cancel()`, `done`, and `result(timeout=-1)` (timeout in seconds, positional). Jobs run without
 the Python GIL; progress callbacks in `run` execute on the caller thread. Dropping
 a job requests cancellation. No Python callback runs for each cell. Inputs copy
 into native owned storage once; strided float64 point buffers are supported.

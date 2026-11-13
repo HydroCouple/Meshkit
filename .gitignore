@@ -7,3 +7,8 @@ wheelhouse/
 __pycache__/
 *.pyc
 .DS_Store
+
+# Documentation builds
+docs/html/
+docs/doxygen.log
+python/docs/_build/

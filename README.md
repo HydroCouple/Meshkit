@@ -13,6 +13,8 @@ MeshKit is an independently configurable, buildable and installable CMake projec
 
 The `_qt` names make the remaining transitional API explicit. These targets do not depend on Qt Widgets, the OpenSWMM application, the simulation engine, GDAL, or Python. **`runtime`, `core`, and `io` are Qt-free.** The native job supports triangles and jointly planned mapped/automatic mixed meshes. The Qt planning, patch, sizing and constraint facades delegate to the same standard C++ implementations. The GUI retains terrain/GIS capture, legacy free quad matching and project orchestration. The native and Qt triangulation specializations share one algorithm implementation, with no GUI working-array mirror. See [the native API contract](NATIVE_API.md) for units, ownership, capabilities, error reporting, file schemas and examples.
 
+Documentation: the [C++ API reference](https://www.hydrocouple.org/Meshkit/) and the [Python package documentation](https://www.hydrocouple.org/Meshkit/python/).
+
 ## Build and use
 
 ```sh

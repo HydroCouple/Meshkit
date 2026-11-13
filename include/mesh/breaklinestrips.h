@@ -29,9 +29,11 @@
 namespace mesh
 {
 
+/*! \brief Detection policy for findFacingPairs(). Lengths are in map (XY) units. With the
+ *  zero defaults the width/station check fails and no pairs are returned. */
 struct FacingPairOptions {
     double minWidth = 0.0; ///< Separation range, map units (maxWidth > minWidth > 0).
-    double maxWidth = 0.0;
+    double maxWidth = 0.0; ///< Upper end of that range: how far each normal ray is cast.
     double station = 0.0;      ///< Sampling step along each line, map units (> 0).
     double maxAngleDeg = 20.0; ///< Largest angle between the two lines at a station.
     double widthChange =
@@ -45,8 +47,13 @@ struct FacingPairOptions {
     std::function<double(double, double)> elevationAt;
 };
 
+/*! \brief One facing run found by findFacingPairs(). */
 struct FacingPair {
+    /** @var lineA
+     *  Index of the line whose stations cast the rays (side A). */
     int lineA = -1, lineB = -1;    ///< Indices into the input lines.
+    /** @var bankA
+     *  The facing portion of line lineA, in that line's direction (>= 2 points). */
     QVector<QPointF> bankA, bankB; ///< The facing portions: A in A's direction, B in B's.
     double width = 0.0;            ///< Median separation.
     double length = 0.0;           ///< Along A.

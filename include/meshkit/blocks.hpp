@@ -1,7 +1,7 @@
 #include "meshkit/regions.hpp"
 #include "meshkit/detail/planmodel.hpp"
 /**
- * @file      quadblocks.h
+ * @file      blocks.hpp
  * @brief     Automatic open-area quad blocks (workplans/MESH_REGIONAL_TRIQUAD_PLAN_2026-10-03.md,
  *            phases 2-3).
  * @author    Caleb Buahin <caleb.buahin@gmail.com>
@@ -29,8 +29,11 @@ struct MeshResult;
 /*! \brief Local cell size on a regular grid; NaN marks unusable cells. */
 struct QuadBlockGrid {
     Point2 origin; ///< Lower-left corner of cell (0, 0).
-    double pitch = 0.0;
+    double pitch = 0.0; ///< Square cell side in planar (XY) units; 0 = no grid.
+    /// Column count; cell (c, r) covers origin.x() + [c, c + 1] * pitch along X.
     int cols = 0, rows = 0;
+    /** @var rows
+     *  @brief Row count; cell (c, r) covers origin.y() + [r, r + 1] * pitch along Y. */
     Vector<float> h; ///< Row-major, cols x rows.
 
     /**
@@ -46,11 +49,14 @@ struct QuadBlockGrid {
     }
 };
 
+/*! \brief Policy for placeQuadBlocks(). */
 struct QuadBlockOptions {
     double minSpacing = 0.0; ///< Blocks finer than this are not worth a patch.
     double bandRatio = 1.3;  ///< Size bands are powers of this.
+    /// Fewest quads of the band spacing along each block side; a candidate rectangle must also
+    /// span at least three grid cells per side.
     int minQuadsPerSide = 4;
-    int maxBlocks = 50000;
+    int maxBlocks = 50000; ///< Most regions returned; <= 0 returns none.
 };
 
 /**
@@ -83,6 +89,26 @@ QuadBlockGrid quadBlockGridFromMesh(const MeshResult &mesh, double pitch,
 // No triangle pilot pass is needed. Candidates still require geometric and
 // metric/terrain validation by the joint planner. Zero/unbounded targets are
 // unusable. Cancellation/invalid layouts return an invalid grid.
+/**
+ * @brief Sample a footprint size callback onto a candidate block grid and mask blockers.
+ *
+ * Arguments, in order:
+ * - the extent box (XY units; must satisfy Box2::isValid()), whose minimum corner becomes the
+ *   origin; the grid has ceil(width / pitch) x ceil(height / pitch) cells;
+ * - `pitch`, the positive finite cell side in the same units;
+ * - `maximumSize`, a required callback giving the conservative size bound over a cell's box;
+ *   it is called once per cell, synchronously, and its exceptions propagate;
+ * - `blockers`, borrowed paths whose consecutive segments are sampled at most half a pitch
+ *   apart, marking each sample's cell and its eight neighbours unusable;
+ * - `cancelled`, an optional poll checked every 4096 cells and blocker samples;
+ * - `maximumCells`, the largest allowed cell count (>= 1).
+ *
+ * Each usable cell stores 0.9 times its size bound; a zero, negative, nonfinite or
+ * float-overflowing bound leaves the cell unusable (NaN).
+ * @return The owned grid; an invalid default grid on any refused argument, a column or row
+ * count above 1e8, more cells than maximumCells, a nonfinite blocker segment or sample, more
+ * than 1e8 samples on one segment, or cancellation.
+ */
 QuadBlockGrid quadBlockGridFromField(const Box2 &, double pitch,
                                      const std::function<double(const Box2 &)> &maximumSize,
                                      const Vector<Vector<Point2>> &blockers,

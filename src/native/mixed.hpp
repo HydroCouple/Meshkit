@@ -9,16 +9,36 @@
 #include <cstring>
 namespace meshkit::native_detail
 {
+/** @brief Exact hash-map key of an XY point: the bit patterns of its two doubles. */
 struct Coordinate {
+    /// IEEE-754 bit pattern of x (see coordinate()).
     std::uint64_t x = 0, y = 0;
+    /** @var y
+     *  @brief IEEE-754 bit pattern of y. */
+    /**
+     * @brief Bitwise equality of both patterns.
+     * @param[in] b Key to compare with.
+     * @return True when both bit patterns match.
+     */
     bool operator==(const Coordinate &b) const { return x == b.x && y == b.y; }
 };
+/** @brief Hash functor for Coordinate keys in unordered containers. */
 struct CoordinateHash {
+    /**
+     * @brief Mix the two bit patterns (boost-style hash_combine).
+     * @param[in] p Key to hash.
+     * @return Hash value.
+     */
     std::size_t operator()(Coordinate p) const
     {
         return p.x ^ (p.y + 0x9e3779b97f4a7c15ull + (p.x << 6) + (p.x >> 2));
     }
 };
+/**
+ * @brief Build the exact key of a point, mapping -0.0 to +0.0.
+ * @param[in] p Point; no tolerance is applied, so distinct doubles give distinct keys.
+ * @return Key holding the bit patterns of p.x() and p.y().
+ */
 inline Coordinate coordinate(Point2 p)
 {
     double x = p.x() == 0 ? 0 : p.x(), y = p.y() == 0 ? 0 : p.y();
@@ -27,15 +47,52 @@ inline Coordinate coordinate(Point2 p)
     std::memcpy(&k.y, &y, 8);
     return k;
 }
+/** @brief Quad patches planned before triangulation, with the extra sources they need. */
 struct PreparedPatches {
+    /// Fixed patches from the request, in order, then the planner's patches.
     std::vector<plan::PatchMesh> patches;
+    /// Per patch: planning-region index, -1 for fixed patches. Indices below the request's
+    /// quadRegions.size() are authored regions; larger ones are automatic block tiles.
     std::vector<int> regions;
+    /// Planner decision records, one per planning region (authored, then automatic tiles).
     std::vector<plan::PatchDecision> decisions;
+    /// Request points, then explicit region-ring vertices, then patch boundary stations.
     std::vector<Point2> points;
+    /// One closed PathKind::Region path per explicit (non-background, non-automatic) region,
+    /// id -(i + 1) for planning region i, indexing #points.
     std::vector<Path> extraPaths;
+    /// Per patch, per patch vertex: index in #points of its boundary station, or -1 for a
+    /// vertex on no boundary segment.
     std::vector<std::vector<int>> boundarySources;
+    /// Total quads across #patches.
     std::uint64_t cells = 0, sharedSides = 0;
+    /** @var sharedSides
+     *  @brief Patch sides the joint planner matched to an already registered side. */
 };
+/**
+ * @brief Plan the request's fixed, authored and automatic quad patches before triangulation.
+ *
+ * Outer and hole paths become planning domains and holes, other paths constraint lines, and
+ * points on no path become pins. With automatic blocks, a candidate grid over the outer
+ * paths' bounding box is sampled from maximumSize and the placed blocks are split into tiles
+ * added as background automatic-candidate regions. Fixed patches are validated and assessed.
+ * Callbacks run synchronously; their exceptions propagate.
+ * @param[in] r Borrowed job request; paths must index r.points.
+ * @param[in] p Borrowed providers: cancelled, and with a positive terrain tolerance also
+ * elevation and terrainBound, are passed to the planner.
+ * @param[in] maximumSize Borrowed footprint size bound in XY units (0 = unbounded).
+ * @param[in] tolerance Borrowed footprint terrain tolerance in Z units; used only with a
+ * positive request terrain tolerance.
+ * @param[in,out] work Budget charged for planner work and tiles; also gates the result's
+ * workspace estimate.
+ * @param[in] attempt Retry number; not used by this function.
+ * @return Owned patches, sources and decisions.
+ * @throws Stop on invalid input (`path_index`, `region_geometry`), an invalid or cancelled
+ * block grid (`planning_grid`), fixed quads in triangles-only mode (`quad_conflict`), planning
+ * failure (`quad_plan`, with the planner's Cancelled/ResourceLimit/Infeasible status), invalid
+ * fixed patches (`fixed_patch`), result counts above the job limits (`planning_limit`), or
+ * from work.
+ */
 inline PreparedPatches preparePatches(const JobRequest &r, const Providers &p,
                                       const std::function<double(const Box2 &)> &maximumSize,
                                       const std::function<double(const Box2 &)> &tolerance,

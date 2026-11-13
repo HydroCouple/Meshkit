@@ -1,7 +1,7 @@
 
 #include "meshkit/detail/planmodel.hpp"
 /**
- * @file      sizefield.h
+ * @file      sizefield.hpp
  * @brief     Graded element sizing for Delaunay refinement
  *            (MESH_MINSIZE_ENFORCEMENT_V2_AND_GRADING_PLAN_2026-09-01.md Track B).
  * @author    Caleb Buahin <caleb.buahin@gmail.com>
@@ -54,6 +54,8 @@
 namespace meshkit::plan
 {
 
+/*! \brief Inputs to SizeField::build(): feature grading, caps, floor, terrain term and
+ *  polygon overrides. Lengths are in mesh XY units, areas in squared XY units. */
 struct SizeFieldOptions {
     bool footprintBounds = false; ///< Build a compact min pyramid for verified sizing.
     /*! Element size (edge length, map units) AT a feature.  Callers derive it
@@ -89,9 +91,15 @@ struct SizeFieldOptions {
     std::function<double(double, double)> terrainSizeAt;
     /*! Polygon overrides: inside \c ring the size is min'd with \c h. */
     struct Region {
+        /// Implicitly closed polygon. Entries of regions cap grid centres inside it (odd-even
+        /// rule); box queries use only its bounding box.
         Polygon ring;
+        /// Size cap in mesh units. In regions a value not > 0 (including NaN) disables the
+        /// entry; in terrainRegions it must be positive and finite or build() fails.
         double h = 0.0;
     };
+    /*! Size caps applied at grid centres inside each ring, and by bounding box in
+     *  SizeField::minimumSizeInBox(); the area floor still raises them. */
     Vector<Region> regions;
     Vector<Region>
         terrainRegions; ///< Finer prescribed directional scales; footprint terrain queries only.
@@ -119,6 +127,17 @@ class SizeField
 public:
     // Conservative bound on every bilinear target over this rectangle. Zero
     // means unbounded/invalid field. Includes all interpolation support nodes.
+    /**
+     * @brief Conservative lower bound on the target edge length over a box.
+     *
+     * The box argument is in mesh XY units and is clamped to the grid. The minimum covers every
+     * grid node that supports interpolation inside it (from the min pyramid when footprintBounds
+     * was set, otherwise by scanning), raised to the area floor's size, then capped by every
+     * SizeFieldOptions::regions entry whose ring bounding box intersects the box
+     * (Box2::intersects()). Terrain-only regions are excluded; see minimumTerrainSizeInBox().
+     * @return Length in mesh XY units; 0 for an invalid field, a nonfinite box, or no bound.
+     * Read-only; safe for concurrent calls on a completed field.
+     */
     double minimumSizeInBox(const Box2 &) const;
     double minimumTerrainSizeInBox(const Box2 &)
         const; ///< Includes finer directional source bounds without changing nominal sizing.
@@ -139,7 +158,9 @@ public:
      * maxSize is an upper source bound; nonpositive/nonfinite maxSize is disabled. Terrain
      * callback executes synchronously per grid center, returns a positive finite size or no
      * bound, must not mutate/reenter this object; exceptions propagate.
-     * @return False with cleared arrays/zero dimensions for invalid grid layout/budget, true
+     * @return False with cleared arrays/zero dimensions for invalid grid layout/budget. Also
+     * false, after the dimensions are set (so isValid() stays true), when a terrainRegions
+     * entry has a non-positive or non-finite size: trust the return value, not isValid(). True
      * after size construction, including valid unbounded seedless fields. Grid allocation may
      * reach twice maxGridCells under the layout's border allowance, and no
      * cancellation/error-text channel is provided. Old field is discarded at entry;
@@ -147,8 +168,9 @@ public:
      * numeric grids, retains no feature/policy/callback references; no geometry/engine mutation.
      * Read-only queries may run concurrently only after successful build and without mutation.
      *
-     * @details Build the field.  Returns false (and leaves the field invalid) for a degenerate
-     * bbox or nonsensical options. Without seeds each cell starts at maxSize or unbounded;
+     * @details Build the field.  Returns false for a degenerate bbox or nonsensical options
+     * (see the return value for when isValid() still holds). Without seeds each cell starts at
+     * maxSize or unbounded;
      * terrain and region terms can supply local sizes. No size sources is a valid unbounded
      * field.
      *

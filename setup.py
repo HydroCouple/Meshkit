@@ -37,6 +37,7 @@ class NativeBuild(build_ext):
 setup(name="hydrocouple.meshkit", version="0.2.0", description="Independent mixed meshing with terrain certificates and streaming I/O",
       url="https://github.com/HydroCouple/Meshkit",
       project_urls={"Source": "https://github.com/HydroCouple/Meshkit",
+                    "Documentation": "https://www.hydrocouple.org/Meshkit/python/",
                     "Changelog": "https://github.com/HydroCouple/Meshkit/blob/main/CHANGELOG.md"},
       long_description=(ROOT / "python/README.md").read_text(), long_description_content_type="text/markdown",
       license="Apache-2.0", license_files=["LICENSE", "NOTICE", "RELICENSING.md", "vendor/predicates/LICENSE"],

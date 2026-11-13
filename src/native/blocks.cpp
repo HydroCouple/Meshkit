@@ -1,7 +1,7 @@
 #include "meshkit/blocks.hpp"
 #include "meshkit/cdt.hpp"
 /**
- * @file      quadblocks.cpp
+ * @file      blocks.cpp
  * @brief     Automatic open-area quad blocks (workplans/MESH_REGIONAL_TRIQUAD_PLAN_2026-10-03.md,
  *            phases 2-3).
  * @author    Caleb Buahin <caleb.buahin@gmail.com>
