@@ -5,7 +5,9 @@ The Markdown files are written for GitHub, where ``[setup.py](setup.py)`` opens 
 file in the repository. The documentation site hosts only the pages, so this filter
 rewrites relative links to repository files that are not Markdown pages into links
 to the file on GitHub. Links to ``.md`` files, anchors, images and absolute URLs are
-left for Doxygen. Lines are rewritten in place, so warning line numbers still match.
+left for Doxygen. It also escapes a GitHub handle that opens link text, as in
+``[@cbuahin](...)``: Doxygen 1.13 reads ``@cbuahin`` as a command there. Lines are
+rewritten in place, so warning line numbers still match.
 
 Doxygen runs it as ``python3 repo_links_filter.py <file>`` (FILTER_PATTERNS in the
 Doxyfile) and reads the filtered text from standard output.
@@ -20,6 +22,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LINK = re.compile(r"(?<!!)(\]\()([^)\s]+)(\))")
 LEFT_TO_DOXYGEN = re.compile(r"^(?:[a-z][a-z0-9+.-]*:|#)|\.md(?:#|$)|\.(?:png|svg|jpe?g|gif)$",
                              re.IGNORECASE)
+HANDLE = re.compile(r"\[@(?=[A-Za-z0-9-]+\])")
 
 
 def rewrite(target: str, folder: str) -> str:
@@ -46,6 +49,7 @@ def main() -> None:
             if not fenced:
                 line = LINK.sub(lambda m: m.group(1) + rewrite(m.group(2), folder) + m.group(3),
                                 line)
+                line = HANDLE.sub(r"[\\@", line)
             sys.stdout.write(line)
 
 
