@@ -16,3 +16,7 @@ own repository, with its history. The library is unchanged from the GUI's
   3.10–3.13 on Linux, macOS and Windows and publishes it, with an sdist, to PyPI.
 - Apache-2.0 (rights-holder authorization recorded in RELICENSING.md); the
   vendored robust predicates keep their public-domain notice.
+- Project governance shared with the other HydroCouple repositories:
+  contribution guide, individual and corporate CLAs, Code of Conduct, security
+  policy, privacy statement, authors, citation metadata (CITATION.cff,
+  .zenodo.json), issue templates, and CodeQL and OpenSSF Scorecard workflows.

@@ -76,6 +76,10 @@ MeshKit is licensed under **Apache-2.0**, following the rights holder's explicit
 
 The standard C++ project includes planning, source simplification, conservative sizing, mixed job assembly, shared-constraint audits and generic file I/O. GDAL reprojection/file loading, GUI project capture, coupling attributes, adoption/undo and renderer integration remain application adapters. Native callers supply a common planar frame and an authored graph with crossing intersections noded; exact shared vertices/overlaps do not require proximity welding. Unsupported required mapped geometry fails with a reason; preferred quads can fall back to triangles. General all-quad decomposition of arbitrary polygons is not promised.
 
+## Contributing, security and citation
+
+Contributions are welcome under the [contribution guide](CONTRIBUTING.md); contributors sign the [CLA](CLA.md) (organizations also the [CCLA](CCLA.md)) and follow the [Code of Conduct](CODE_OF_CONDUCT.md). Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md). To cite MeshKit, use [CITATION.cff](CITATION.cff). The [privacy statement](PRIVACY.md) explains what the software and the project do with personal information; [AUTHORS.md](AUTHORS.md) credits contributors.
+
 ## Constraint simplification
 
 `<mesh/constraintsimplifier.h>` provides a collection-level policy pass. Features carry stable IDs, per-feature preserve/simplify policies, XY/Z limits, protected flags, corner and ring-area limits. The collection shares an immutable segment BVH; proposed shortcuts check original-span deviation, monotone projection, obstacles/clearance, pins and swept pockets. A final index checks output shortcuts against each other. Conflicts or work-budget exhaustion retain original geometry. The API returns source-vertex mappings and per-feature change statistics. It assumes a common finite planar frame and an intended original graph; it does not repair invalid input topology or generalize/delete holes.

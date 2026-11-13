@@ -1,0 +1,83 @@
+name: CodeQL
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+    paths: ['src/**', 'include/**', 'python/**', 'tools/**', 'cmake/**', 'CMakeLists.txt', 'setup.py']
+  pull_request:
+    branches: [main]
+    paths: ['src/**', 'include/**', 'python/**', 'tools/**', 'cmake/**', 'CMakeLists.txt', 'setup.py']
+  schedule: [{ cron: "0 6 * * 1" }]
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # C/C++ requires a real compile so CodeQL can hook every translation unit.
+          - language: c-cpp
+            build-mode: manual
+          # Python is scanned from source — no build needed.
+          - language: python
+            build-mode: none
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          config-file: ./.github/codeql/codeql-config.yml
+
+      # ── C/C++ build (every target that ships: Qt-free, Qt, Python, CLI) ──
+      - name: Set up Python
+        if: matrix.language == 'c-cpp'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Qt
+        if: matrix.language == 'c-cpp'
+        uses: jurplel/install-qt-action@v4.5.0
+        with:
+          version: '6.5.3'
+          cache: true
+
+      # Tests and benchmarks are off — CodeQL needs the shipped code compiled,
+      # not the test executables, so skipping them keeps the analysis tight.
+      - name: Configure
+        if: matrix.language == 'c-cpp'
+        run: >
+          cmake -S . -B build-codeql
+          -DCMAKE_BUILD_TYPE=Debug
+          -DMESHKIT_BUILD_QT=ON
+          -DMESHKIT_BUILD_PYTHON=ON
+          -DMESHKIT_BUILD_CLI=ON
+          -DMESHKIT_BUILD_TESTS=OFF
+          -DMESHKIT_BUILD_BENCHMARKS=OFF
+          -DPython3_EXECUTABLE="$(command -v python)"
+
+      - name: Build
+        if: matrix.language == 'c-cpp'
+        run: cmake --build build-codeql --parallel
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"

@@ -1,0 +1,24 @@
+name: MeshKit CodeQL config
+
+# security-extended adds higher-precision security queries beyond the
+# default suite without pulling in the style/quality noise from
+# security-and-quality. Adjust here if signal-to-noise needs tuning.
+queries:
+  - uses: security-extended
+
+paths-ignore:
+  # ── Vendored public-domain predicates ─────────────────────────────────
+  # A vendored copy of Shewchuk's predicates.c (see vendor/predicates/LICENSE).
+  # MeshKit uses only exactinit(), orient2d() and incircle(): floating-point
+  # arithmetic with no I/O or allocation.
+  - vendor/**
+
+  # ── Generated / build outputs ─────────────────────────────────────────
+  - build*/**
+  - cmake-build*/**
+  - python/build/**
+  - wheelhouse/**
+  - dist/**
+
+  # ── Tests, fixtures and probes (not shipped) ──────────────────────────
+  - tests/**

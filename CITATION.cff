@@ -1,0 +1,39 @@
+cff-version: 1.2.0
+type: software
+title: "MeshKit"
+message: "If you use MeshKit, developed by HydroCouple, please cite the version you used as below."
+abstract: >-
+  MeshKit, developed by HydroCouple, is an open-source library for generating
+  and checking unstructured two-dimensional meshes: constrained Delaunay
+  triangulation, mixed triangle and quadrilateral meshes with mapped patches,
+  size fields, bilinear terrain certificates, and streaming MKB and SMS 2DM
+  file I/O. It provides Qt-free C++17 targets, optional Qt adapters, Python
+  bindings and a command-line tool.
+authors:
+  - family-names: Buahin
+    given-names: Caleb
+    orcid: "https://orcid.org/0000-0002-9859-2264"
+  - name: HydroCouple Developers
+version: "0.2.0"
+license: Apache-2.0
+repository-code: "https://github.com/HydroCouple/Meshkit"
+keywords:
+  - mesh generation
+  - unstructured mesh
+  - constrained Delaunay triangulation
+  - quadrilateral mesh
+  - two-dimensional surface flow
+  - hydrodynamic modeling
+references:
+  - type: article
+    title: "Adaptive Precision Floating-Point Arithmetic and Fast Robust Geometric Predicates"
+    authors:
+      - family-names: Shewchuk
+        given-names: Jonathan Richard
+    journal: "Discrete & Computational Geometry"
+    volume: 18
+    issue: 3
+    start: 305
+    end: 363
+    year: 1997
+    doi: "10.1007/PL00009321"
