@@ -159,6 +159,29 @@ html_title = 'MeshKit'
 html_favicon = 'images/hydrocouple_logo.png'
 
 html_static_path = ['_static']
-html_css_files = ['meshkit.css', 'hydrocouple-palette.css']
+html_css_files = ['meshkit.css']
 
 htmlhelp_basename = 'meshkitdoc'
+
+
+# -- HydroCouple documentation theme ---------------------------------------
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "_hydrocouple"))
+import hydrocouple_theme  # noqa: E402
+
+hydrocouple_theme.configure(
+    globals(),
+    manual_id="MeshKit.python",
+    project_label="MeshKit · Python",
+    repository="https://github.com/HydroCouple/Meshkit",
+    hero={
+        "kicker": "MeshKit · Python",
+        "title": "Mixed meshing from Python",
+        "lede": "The meshkit package runs MeshKit's mesh jobs on native worker threads and "
+                "returns read-only buffers that NumPy can share without copying.",
+        "actions": [
+            {"label": "Get started", "url": "guide/quickstart", "style": "solid"},
+            {"label": "API reference", "url": "api", "style": "ghost"},
+            {"label": "C++ reference", "url": "https://www.hydrocouple.org/Meshkit/", "style": "ghost"},
+        ],
+    },
+)

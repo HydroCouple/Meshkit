@@ -1467,7 +1467,11 @@ HTML_STYLESHEET        =
 # documentation.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_STYLESHEET  = ./custom/css/doxygen-awesome.css
+HTML_EXTRA_STYLESHEET  = ./custom/css/doxygen-awesome.css \
+                         ./custom/hydrocouple/hc-fonts.css \
+                         ./custom/hydrocouple/hc-tokens.css \
+                         ./custom/hydrocouple/hc-diagrams.css \
+                         ./custom/hydrocouple/hydrocouple-doxygen.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
 # other source files which should be copied to the HTML output directory. Note
@@ -1481,7 +1485,21 @@ HTML_EXTRA_FILES       = custom/js/doxygen-awesome-darkmode-toggle.js \
                          custom/js/doxygen-awesome-fragment-copy-button.js \
                          custom/js/doxygen-awesome-interactive-toc.js \
                          custom/js/doxygen-awesome-paragraph-link.js \
-                         custom/js/doxygen-awesome-tabs.js
+                         custom/js/doxygen-awesome-tabs.js \
+                         custom/hydrocouple/hc-doxygen.js \
+                         custom/hydrocouple/hc-diagrams.js \
+                         custom/hydrocouple/hydrocouple_logo.png \
+                         custom/hydrocouple/inter-greek.woff2 \
+                         custom/hydrocouple/inter-latin-ext.woff2 \
+                         custom/hydrocouple/inter-latin.woff2 \
+                         custom/hydrocouple/jetbrains-mono-greek.woff2 \
+                         custom/hydrocouple/jetbrains-mono-latin-ext.woff2 \
+                         custom/hydrocouple/jetbrains-mono-latin.woff2 \
+                         custom/hydrocouple/sora-latin-ext.woff2 \
+                         custom/hydrocouple/sora-latin.woff2 \
+                         custom/hydrocouple/inter-OFL.txt \
+                         custom/hydrocouple/jetbrainsmono-OFL.txt \
+                         custom/hydrocouple/sora-OFL.txt
 
 # The HTML_COLORSTYLE tag can be used to specify if the generated HTML output
 # should be rendered with a dark or light theme.
