@@ -99,7 +99,7 @@ QuadBlockGrid quadBlockGridFromMesh(const MeshResult &mesh, double pitch,
  * - `maximumSize`, a required callback giving the conservative size bound over a cell's box;
  *   it is called once per cell, synchronously, and its exceptions propagate;
  * - `blockers`, borrowed paths whose consecutive segments are sampled at most half a pitch
- *   apart, marking each sample's cell and its eight neighbours unusable;
+ *   apart, marking each sample's cell and its eight neighbors unusable;
  * - `cancelled`, an optional poll checked every 4096 cells and blocker samples;
  * - `maximumCells`, the largest allowed cell count (>= 1).
  *

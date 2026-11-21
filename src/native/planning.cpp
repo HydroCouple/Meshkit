@@ -228,7 +228,7 @@ PatchAssessment assessPlannedPatch(const PatchMesh &patch, const PatchLimits &li
     for (int i = 0; i < patch.quads.size(); ++i) {
         if ((i & 1023) == 0 && limits.cancelled && limits.cancelled()) {
             out.cancelled = true;
-            return fail("Patch planning cancelled.");
+            return fail("Patch planning canceled.");
         }
         const auto &cell = patch.quads[i];
         if (!cell.isQuad())
@@ -333,7 +333,7 @@ QuadPlan planQuadRegions(const Vector<QuadRegion> &regions, const QuadPlanningGe
         if ((++out.workUsed & 4095) == 0 && options.limits.cancelled &&
             options.limits.cancelled()) {
             out.cancelled = true;
-            out.error = "Quad planning cancelled.";
+            out.error = "Quad planning canceled.";
             throw Stop{};
         }
     };
@@ -351,7 +351,7 @@ QuadPlan planQuadRegions(const Vector<QuadRegion> &regions, const QuadPlanningGe
     try {
         if (options.limits.cancelled && options.limits.cancelled()) {
             out.cancelled = true;
-            out.error = "Quad planning cancelled.";
+            out.error = "Quad planning canceled.";
             throw Stop{};
         }
         if (!(options.defaultSize > 0) || !std::isfinite(options.defaultSize) ||
@@ -857,7 +857,7 @@ PatchInterfaceReport auditPatchInterfaces(const MeshResult &mesh,
     for (int i = 0; i < mesh.triangles.size(); ++i) {
         if ((i & 4095) == 0 && cancelled && cancelled()) {
             out.cancelled = true;
-            out.error = "Patch interface audit cancelled.";
+            out.error = "Patch interface audit canceled.";
             return out;
         }
         const auto &cell = mesh.triangles[i];

@@ -162,7 +162,7 @@ struct SimplificationChange {
     /**
      * @var budgetRetained
      * @brief The original geometry was kept because the work budget or workspace limit ran
-     * out, or the run was cancelled.
+     * out, or the run was canceled.
      * @var rolledBack
      * @brief An accepted edit was reverted: ring area/orientation limit failed, output
      * shortcuts of different features intersected, or a feature in the same shared-segment
@@ -251,7 +251,7 @@ struct ConstraintSimplificationResult {
  * @return One output feature and one change per input. Invalid input: error set, ok false.
  * Work or workspace exhaustion: all originals, ok true, budgetRetained set. Cancellation:
  * all originals, ok false. No IO; no shared mutable state besides one-time exact-predicate
- * initialisation.
+ * initialization.
  */
 ConstraintSimplificationResult
 simplifyConstraints(const Vector<SimplificationFeature> &features,

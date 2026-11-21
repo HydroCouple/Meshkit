@@ -894,7 +894,7 @@ static JobResult runAttempt(const JobRequest &request, const Providers &supplied
                     fail(
                         "patch_interface",
                         "Fixed or repeatedly repaired patch has an unmatched cell-edge interface.");
-                throw Retry{region, "Mapped stations do not match delivered neighbouring edges."};
+                throw Retry{region, "Mapped stations do not match delivered neighboring edges."};
             }
         }
         // Independent source geometry/side audit sees only the real domain and

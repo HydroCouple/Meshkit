@@ -156,7 +156,7 @@ cancellation or exhausted required budget returns no partial plan. Optional sour
 can fall back to triangles. Geometry/certification callbacks are immutable and execute
 synchronously on the job thread.
 
-Fixed-boundary neighbour sizes let CDT repair oversized adjacent triangles using
+Fixed-boundary neighbor sizes let CDT repair oversized adjacent triangles using
 storage proportional to patch perimeter. An independent delivered-interface audit
 checks actual nominal ratios. Up to three exceptional regenerations can omit preferred
 patches or refine required generated stations. Immutable fixed patches fail with an
@@ -209,7 +209,7 @@ uses `coarseningReferenceSize` for ordering; it does not invent a size cap.
 Normals remain an ordering signal, never a terrain error certificate.
 
 `<mesh/coarseningqueue.h>` maintains one live entry per vertex and preallocates the
-known free-slot ceiling. Reconsidering neighbours updates an existing entry rather
+known free-slot ceiling. Reconsidering neighbors updates an existing entry rather
 than accumulating stale heap entries. Morton tiles retain locality and the pass
 remains serial. Topology, original input/constraint/pin protection, shortest-edge,
 angle, nominal/full-footprint size and terrain certificate gates remain separate.

@@ -771,7 +771,7 @@ private slots:
      */
     void gradedSizesGiveSmoothNeighbours()
     {
-        // h grows away from the left edge at slope 0.3: neighbouring
+        // h grows away from the left edge at slope 0.3: neighboring
         // triangles' longest edges differ by at most 1/sin 30° = 2 and are
         // usually within 1.3.
         ConstrainedDelaunay cdt;

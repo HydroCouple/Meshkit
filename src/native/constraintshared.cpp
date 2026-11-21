@@ -389,7 +389,7 @@ simplifySharedConstraints(const Vector<SimplificationFeature> &input,
             unchanged.features[fi] = std::move(output);
         }
         // Ring-area rejection rolls back every owner in that shared component,
-        // so a neighbour can never retain a shortcut after its partner reverted.
+        // so a neighbor can never retain a shortcut after its partner reverted.
         for (int fi = 0; fi < input.size(); ++fi)
             if (rollback[root(fi)] && unchanged.changes[fi].removed) {
                 unchanged.features[fi] = input[fi];

@@ -26,33 +26,33 @@ namespace mesh
 // Physical lengths are SI; absence means no maximum, inherit minimum,
 // automatic tolerance, or match-minimum averaging respectively.
 /**
- * @brief Unit-independent mesh resolution choices (lengths in SI metres) with JSON
+ * @brief Unit-independent mesh resolution choices (lengths in SI meters) with JSON
  * round-trip, legacy migration and validation. Plain value type; validate() is never applied
  * implicitly.
  */
 struct ResolutionSettings {
-    /// Minimum target cell size, metres (default 6.096 m = 20 ft); finite in (0, 1e12].
+    /// Minimum target cell size, meters (default 6.096 m = 20 ft); finite in (0, 1e12].
     double minimumM = 6.096;
     /** @var maximumM
-     *  Maximum target cell size, metres; absent = no limit, else >= minimumM. */
+     *  Maximum target cell size, meters; absent = no limit, else >= minimumM. */
     /** @var featureM
      *  Target size near selected features when refineFeatures; absent = minimumM. With
      *  refineFeatures it must lie within [minimumM, maximumM]. */
     /** @var toleranceM
-     *  Terrain elevation tolerance, vertical metres (JSON "elevationToleranceM"); absent =
+     *  Terrain elevation tolerance, vertical meters (JSON "elevationToleranceM"); absent =
      *  automatic estimate. */
     /** @var breaklineToleranceM
-     *  Terrain break-line detection tolerance, vertical metres; absent = automatic. */
+     *  Terrain break-line detection tolerance, vertical meters; absent = automatic. */
     /** @var averagingM
-     *  DEM averaging scale for the Averaged reference, metres; absent = minimumM. */
+     *  DEM averaging scale for the Averaged reference, meters; absent = minimumM. */
     /** @var minimumBreaklineLengthM
-     *  Shortest terrain break line to keep, metres; absent = the caller's default. */
+     *  Shortest terrain break line to keep, meters; absent = the caller's default. */
     std::optional<double> maximumM, featureM, toleranceM, breaklineToleranceM, averagingM,
         minimumBreaklineLengthM;
     /// Cap on terrain break lines, 0..10,000,000; 0 = let the caller choose automatically.
     int maxBreaklines = 0;
-    int coarsenPasses = 0; ///< Absent in older projects: retain their original mesh behaviour.
-    /// Size transition (growth) rate between neighbouring targets; finite and >= 1.05.
+    int coarsenPasses = 0; ///< Absent in older projects: retain their original mesh behavior.
+    /// Size transition (growth) rate between neighboring targets; finite and >= 1.05.
     double transition = 2.0;
     /** @enum Sizing
      *  Sizing rules: Legacy targets; Verified sizes (report exceptions); Strict sizes (refuse
@@ -73,14 +73,14 @@ struct ResolutionSettings {
         Legacy, ///< Per-region quad routing.
         Unified ///< Joint planning of all quad patches.
     } cellPlanning = CellPlanning::Legacy;
-    /// Separate floor on delivered edge length, metres; absent = none. Needs non-Legacy sizing.
+    /// Separate floor on delivered edge length, meters; absent = none. Needs non-Legacy sizing.
     std::optional<double> minimumEdgeM;
     /// Coarsening removal order (default LegacyFlatness); ResolutionAware needs non-Legacy
     /// sizing.
     CoarseningOrder coarseningOrder=CoarseningOrder::LegacyFlatness;
     /// Terrain tolerance rule (constant or scaled with target size); its sizes and tolerances
-    /// are metres. Must satisfy TerrainTolerancePolicy::valid() and stay <= 1e12.
-    TerrainTolerancePolicy terrainTolerancePolicy; // SI metres, independent of display units.
+    /// are meters. Must satisfy TerrainTolerancePolicy::valid() and stay <= 1e12.
+    TerrainTolerancePolicy terrainTolerancePolicy; // SI meters, independent of display units.
 
     /** @var refineFeatures
      *  Refine to featureM near selected features (default false). */
@@ -110,7 +110,7 @@ struct ResolutionSettings {
     /**
      * @brief Check numeric mesh-resolution settings without modifying or normalizing them.
      * @return Empty string when accepted, otherwise the first English validation error. All
-     * present lengths must be finite in (0,1e12] metres, maximum must not precede minimum, and
+     * present lengths must be finite in (0,1e12] meters, maximum must not precede minimum, and
      * enabled feature refinement must lie within minimum/maximum. Coarsening passes must be
      * 0..10, breakline count 0..10000000, transition finite and >=1.05. Enum validity and
      * relationships between other tolerances are not checked. No project mutation or implicit
@@ -166,7 +166,7 @@ struct ResolutionSettings {
 
     /**
      * @brief Serialize every resolution field into the current project JSON schema.
-     * @return Owned object with SI metre length controls, null for absent optional lengths, and
+     * @return Owned object with SI meter length controls, null for absent optional lengths, and
      * textual terrain/reference modes. Unknown enum values serialize as off/direct respectively
      * through fallback branches. Does not call validate(), perform unit conversion or write a
      * file; this object is unchanged.
@@ -206,7 +206,7 @@ struct ResolutionSettings {
      * values.
      * @param[in] o Borrowed object, unchanged; numeric optional lengths become present only for
      * JSON numbers.
-     * @return Owned settings, distances in metres; unknown terrain/reference strings select
+     * @return Owned settings, distances in meters; unknown terrain/reference strings select
      * adaptive/averaged. Missing optional values remain absent. Does not validate ranges, clamp
      * values, convert project units or mutate project state; callers should call validate()
      * before using authoring inputs.
@@ -256,16 +256,16 @@ struct ResolutionSettings {
         return r;
     }
 
-    // Version 1 stored distance controls in metres and combo choices as indices.
+    // Version 1 stored distance controls in meters and combo choices as indices.
     /**
      * @brief Overlay version-1 generation-dialog controls onto a supplied settings value.
-     * @param[in] c Borrowed legacy control object with metre distances and integer combo
+     * @param[in] c Borrowed legacy control object with meter distances and integer combo
      * selections, unchanged.
      * @param[in] r Initial settings copied by value; fields without legacy controls retain their
      * supplied values, except coarsenPasses resets to zero and maximum/breakline tolerance are
      * derived.
-     * @param[in] extentM Domain extent in metres, used as extentM/100 when legacy feature size
-     * is nonpositive; if not positive the fallback is 1 metre. Caller supplies finite meaningful
+     * @param[in] extentM Domain extent in meters, used as extentM/100 when legacy feature size
+     * is nonpositive; if not positive the fallback is 1 meter. Caller supplies finite meaningful
      * values.
      * @return Owned migrated settings. Nonpositive minimum becomes feature/4, maximum becomes
      * feature times coarsening factor, nonpositive elevation tolerance becomes absent and copies

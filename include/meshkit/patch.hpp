@@ -13,7 +13,7 @@
  *
  *  - \ref meshkit::plan::StructuredPatch — a four-sided polygon meshed by transfinite
  *    (Coons) interpolation between opposite sides, n × m quads;
- *  - \ref meshkit::plan::SweptPatch — a centreline polyline swept with a width, quads
+ *  - \ref meshkit::plan::SweptPatch — a centerline polyline swept with a width, quads
  *    laid across the channel at each station (channel / street case).
  *
  * Both produce a \ref meshkit::plan::PatchMesh in LOCAL vertex indices. The native job
@@ -44,15 +44,15 @@ struct StructuredPatch {
     Text tag; ///< Label copied to PatchMesh::tag and to every generated quad.
 };
 
-/*! \brief Swept patch: the centreline is offset ±width/2 (mitred at interior
+/*! \brief Swept patch: the centerline is offset ±width/2 (mitred at interior
  *  vertices) and cut into \p across quads per station. \p along > 0
- *  resamples every centreline segment to that target spacing (original
- *  vertices are kept); 0 = one station per centreline vertex. */
+ *  resamples every centerline segment to that target spacing (original
+ *  vertices are kept); 0 = one station per centerline vertex. */
 struct SweptPatch {
     Vector<Point2> centreline; ///< >= 2 points.
     double width = 0.0; ///< Full strip width, XY units; must be finite and > 0.
     int across = 0;     ///< Quads across the strip at every station; must be >= 1.
-    /// Target station spacing along the centreline, XY units; must be finite and >= 0. Each
+    /// Target station spacing along the centerline, XY units; must be finite and >= 0. Each
     /// segment is cut into ceil(length/along) equal parts (a ratio within a tiny tolerance of
     /// an integer is snapped to it).
     double along = 0.0;
@@ -106,7 +106,7 @@ struct PatchMesh {
 
 /*! \brief Input checks. Empty string = valid. */
 Text validate(const StructuredPatch &p);
-/*! \brief Input checks for a swept patch: >= 2 finite centreline points with no repeated
+/*! \brief Input checks for a swept patch: >= 2 finite centerline points with no repeated
  *  consecutive vertex, finite width > 0, across >= 1, finite along >= 0, and station, cell
  *  and boundary counts that fit in int. Folded or overlapping offsets are not detected here
  *  (makeSweptPatch() checks them). Empty string = valid, otherwise the first problem found;
@@ -129,7 +129,7 @@ Polygon orderedPatchBoundary(const PatchMesh &pm, Text *err = nullptr);
  *  empty PatchMesh and sets *err. */
 PatchMesh makeTransfinitePatch(const StructuredPatch &p, Text *err = nullptr);
 
-/*! \brief Sweep the centreline: (stations)×(across+1) vertices,
+/*! \brief Sweep the centerline: (stations)×(across+1) vertices,
  *  (stations-1)×across quads. Station and index counts are checked before
  *  allocation. Invalid or globally overlapping/touching offsets return an
  *  empty PatchMesh and a diagnostic identifying the affected stations. */
@@ -145,7 +145,7 @@ PatchMesh makeBankPairPatch(const BankPairPatch &p, Text *err = nullptr);
 /*! \brief Transfinite (Coons) interpolation on four POLYLINE sides forming a
  *  loop: sides[0] runs c0→c1, sides[1] c1→c2, sides[2] c2→c3, sides[3] c3→c0
  *  (each side's last point equals the next side's first). Sides are
- *  arc-length parametrised; n subdivisions along sides 0/2, m along 1/3.
+ *  arc-length parametrized; n subdivisions along sides 0/2, m along 1/3.
  *  Boundary vertices are placed ON the polylines (so the ring the caller
  *  emits as PSLG segments is exactly this patch's boundary loop). Returns an
  *  empty PatchMesh + *err on invalid input (side with < 2 points, endpoints

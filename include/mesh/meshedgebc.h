@@ -12,7 +12,7 @@
  * (stride mesh::kEdgeStride = 4; slot 3 of a triangle is padding).
  * Mirrors openswmm::twoD::BoundaryData on the engine side. Interior-edge
  * slots are populated with `Wall` defaults but never consulted by the engine
- * (interior edges have a neighbour).
+ * (interior edges have a neighbor).
  * @copyright Copyright (c) 2026 Caleb Buahin. All rights reserved.
  */
 
@@ -37,14 +37,14 @@ struct MeshEdgeBC {
     double head = 0.0; ///< Stage for SpecifiedStageConst (project vert. units)
     double slope =
         0.0; ///< Bed slope for NormalFlow (dimensionless; must be > 0 — the engine treats 0 as a wall)
-    double flow = 0.0; ///< Discharge per metre for SpecifiedFlowConst (flow units / m)
+    double flow = 0.0; ///< Discharge per meter for SpecifiedFlowConst (flow units / m)
     QString tseries;   ///< TS name for *TS variants
     QString curve;     ///< Curve name for RatingCurve
     QString group;     ///< Optional named group ("" = none)
     /// Engine §11A — per-edge flux attenuation in [0, 1]. Default 1.0
     /// (unrestricted). Multiplies the flux in SurfaceFluxCalculator. Applies
     /// to ALL edges (interior + boundary) — orthogonal to `type`. Interior
-    /// edges store the same value in both neighbour slots; the layer's
+    /// edges store the same value in both neighbor slots; the layer's
     /// applyMeshEdgeConveyance helper enforces the mirror.
     double conveyance = 1.0;
     double wallDrag = 0.0; ///< WALL tangential Cw; tau/rho=-Cw|ut|ut, zero free-slip.

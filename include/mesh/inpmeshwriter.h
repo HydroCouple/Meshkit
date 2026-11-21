@@ -65,7 +65,7 @@ enum class MeshOutputMode {
  *
  * Every function is static and keeps no state between calls; values are written in the units
  * the mesh already carries (no conversion). File commits use QSaveFile per file, but a
- * two-file write is not a transaction; see each function for its failure behaviour.
+ * two-file write is not a transaction; see each function for its failure behavior.
  */
 class InpMeshWriter
 {
@@ -79,7 +79,7 @@ public:
      *  branch on it.
      *
      *  Engine contract (today): `[2D_VERTICES]` XY is in the project's
-     *  length unit (feet for US flow units, metres otherwise). Engine
+     *  length unit (feet for US flow units, meters otherwise). Engine
      *  multiplies by 0.3048 in `SurfaceRouter2D::initialize` when the
      *  project is US. When the file declares `;; UNITS: SI (m)`, the engine
      *  recognizes the header and skips that multiplication.
@@ -91,7 +91,7 @@ public:
 
         // User-declared (out-of-line) default ctor: makes UnitInfo a
         // non-aggregate so the `const UnitInfo & = {}` default arguments
-        // below invoke this constructor instead of aggregate-initialising
+        // below invoke this constructor instead of aggregate-initializing
         // with the in-class member initializer — which clang rejects as
         // "needed within definition of enclosing class outside of member
         // functions" when the type is nested in InpMeshWriter.
@@ -195,7 +195,7 @@ public:
      * \p mesh; endpoints via `mesh::edgeEndpoints`, every edge of a quad included) and emits one
      * row per edge whose conveyance differs from the default 1.0. Interior edges occupy two
      * slots that the GUI keeps in sync (see SWMM2DMeshLayer::applyMeshEdgeConveyance), so the
-     * writer canonicalises on the first encountered vertex-pair and silently drops the second
+     * writer canonicalizes on the first encountered vertex-pair and silently drops the second
      * half — interior edges appear exactly once. Returns an empty string when every edge is at
      * default.
      *

@@ -309,13 +309,13 @@ struct Point3 {
     /**
      * @var x
      * @brief Horizontal x coordinate in XY plane units; default 0. For a Mesh,
-     * Metadata::horizontalMetresPerUnit gives metres per unit.
+     * Metadata::horizontalMetresPerUnit gives meters per unit.
      * @var y
      * @brief Horizontal y coordinate in XY plane units; default 0. For a Mesh,
-     * Metadata::horizontalMetresPerUnit gives metres per unit.
+     * Metadata::horizontalMetresPerUnit gives meters per unit.
      * @var z
      * @brief Vertical coordinate (elevation) in Z units; default 0. For a Mesh,
-     * Metadata::verticalMetresPerUnit gives metres per unit.
+     * Metadata::verticalMetresPerUnit gives meters per unit.
      */
     double x = 0, y = 0, z = 0;
 };

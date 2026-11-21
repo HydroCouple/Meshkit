@@ -106,7 +106,7 @@ double distSqToSeg(const Point2 &p, const Point2 &a, const Point2 &b)
  * quality proof.
  *
  * @details Two-pass chamfer relaxation: v[i] <= v[j] + w1 (axial) / w2 (diagonal) for every
- * neighbour j. Exact for the octile metric with w2 = sqrt2 * w1.
+ * neighbor j. Exact for the octile metric with w2 = sqrt2 * w1.
  */
 void chamferRelax(Vector<float> &v, int cols, int rows, float w1, float w2)
 {
@@ -457,7 +457,7 @@ void SizeField::stampSeedSegment(const Point2 &a, const Point2 &b, Vector<float>
         stampSeedPoint(a, into);
         return;
     }
-    // Walk the segment at half-pitch steps stamping a 3×3 neighbourhood with
+    // Walk the segment at half-pitch steps stamping a 3×3 neighborhood with
     // the EXACT distance to the segment, so the chamfer starts from truth.
     const int steps = std::max(1, static_cast<int>(std::ceil(len / (m_pitch * 0.5))));
     for (int s = 0; s <= steps; ++s) {

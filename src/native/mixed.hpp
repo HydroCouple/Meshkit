@@ -87,7 +87,7 @@ struct PreparedPatches {
  * workspace estimate.
  * @param[in] attempt Retry number; not used by this function.
  * @return Owned patches, sources and decisions.
- * @throws Stop on invalid input (`path_index`, `region_geometry`), an invalid or cancelled
+ * @throws Stop on invalid input (`path_index`, `region_geometry`), an invalid or canceled
  * block grid (`planning_grid`), fixed quads in triangles-only mode (`quad_conflict`), planning
  * failure (`quad_plan`, with the planner's Cancelled/ResourceLimit/Infeasible status), invalid
  * fixed patches (`fixed_patch`), result counts above the job limits (`planning_limit`), or
@@ -171,7 +171,7 @@ inline PreparedPatches preparePatches(const JobRequest &r, const Providers &p,
         const auto grid =
             plan::quadBlockGridFromField(bounds, pitch, maximumSize, blockers, p.cancelled);
         if (!grid.isValid())
-            fail("planning_grid", "Automatic patch grid is invalid or cancelled.");
+            fail("planning_grid", "Automatic patch grid is invalid or canceled.");
         plan::QuadBlockOptions blocks;
         blocks.maxBlocks = r.options.maximumAutomaticBlocks;
         blocks.minSpacing = std::max(.5 * r.options.minimumTarget, 1e-9);

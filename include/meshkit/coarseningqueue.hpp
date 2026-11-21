@@ -6,7 +6,7 @@
 
 namespace meshkit
 {
-// One live entry per vertex. Updating a neighbour cannot accumulate stale heap
+// One live entry per vertex. Updating a neighbor cannot accumulate stale heap
 // entries. Tile order retains locality; lower importance/density comes first,
 // with vertex id as a deterministic final tie. Thread confined, no callbacks.
 /**

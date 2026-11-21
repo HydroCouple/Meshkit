@@ -3,13 +3,13 @@
 /**
  * @file      regions.cpp
  * @brief     PSLG quad regions (workplans/QUAD_MESHING_REDESIGN_PLAN_2026-09-06.md §3, §4.1):
- *            closed polygons inside the meshing domain where quadrilateral cells are prioritised.
+ *            closed polygons inside the meshing domain where quadrilateral cells are prioritized.
  * @author    Caleb Buahin <caleb.buahin@gmail.com>
  * @date      2026
  * @license   Apache-2.0
  *
  * PSLG quad regions (QUAD_MESHING_REDESIGN_PLAN §3, §4.1): ring
- * normalisation, point-in-ring, simplicity, validation against the domain /
+ * normalization, point-in-ring, simplicity, validation against the domain /
  * hole rings, pairwise overlap test, auto-classification by turning angles
  * and ring resampling at the lattice spacing.
  * @copyright Copyright (c) 2026 Caleb Buahin. All rights reserved.

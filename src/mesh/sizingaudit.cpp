@@ -204,7 +204,7 @@ SizingAuditReport auditMeshSizing(const MeshResult &mesh, const SizingAuditOptio
     }
     out.complete = !out.cancelled && !out.resourceLimited;
     if (out.cancelled)
-        out.error = "Sizing audit cancelled.";
+        out.error = "Sizing audit canceled.";
     if (out.resourceLimited)
         out.error = "Sizing audit exceeded its work or memory budget.";
     return out;

@@ -31,8 +31,8 @@
  * boundary wherever the boundary's own local feature size demands it.
  *
  * Mechanics: a uniform background grid over the domain bbox holds the
- * distance to the nearest seed at each cell centre — exact distances are
- * stamped in a small neighbourhood around every seed, then a two-pass
+ * distance to the nearest seed at each cell center — exact distances are
+ * stamped in a small neighborhood around every seed, then a two-pass
  * chamfer transform propagates them using axial weight pitch and diagonal
  * weight sqrt(2) * pitch. The ideal point-seeded octile metric can overestimate
  * Euclidean distance by about 8.24%; this is not a bound for segment stamping,
@@ -68,7 +68,7 @@ struct SizeFieldOptions {
     /*! Lipschitz slope g: how fast the target size may grow per unit of
      *  distance from a feature.  Must be > 0 (0 = the caller should not build
      *  a field at all — the uniform cap already expresses that).  Typical
-     *  0.1–0.5; 0.25 ≈ a 1.6× area step between neighbouring cells at the
+     *  0.1–0.5; 0.25 ≈ a 1.6× area step between neighboring cells at the
      *  fine scale. */
     double gradation = 0.25;
 
@@ -89,18 +89,18 @@ struct SizeFieldOptions {
     /*! Terrain-error size bound in mesh units at a mesh coordinate
      *  (mesh::TerrainSizeField through the worker's mesh→DEM transform).
      *  <= 0 or non-finite = no bound at that point. Sampled once per grid
-     *  cell centre. Null = no terrain term. */
+     *  cell center. Null = no terrain term. */
     std::function<double(double, double)> terrainSizeAt;
     /*! Polygon overrides: inside \c ring the size is min'd with \c h. */
     struct Region {
-        /// Implicitly closed polygon. Entries of regions cap grid centres inside it (odd-even
+        /// Implicitly closed polygon. Entries of regions cap grid centers inside it (odd-even
         /// rule); box queries use only its bounding box.
         QPolygonF ring;
         /// Size cap in mesh units. In regions a value not > 0 (including NaN) disables the
         /// entry; in terrainRegions it must be positive and finite or build() fails.
         double h = 0.0;
     };
-    /*! Size caps applied at grid centres inside each ring, and by bounding box in
+    /*! Size caps applied at grid centers inside each ring, and by bounding box in
      *  SizeField::minimumSizeInBox(); the area floor still raises them. */
     QVector<Region> regions;
     QVector<Region> terrainRegions; ///< Finer prescribed directional scales; footprint terrain queries only.
@@ -212,7 +212,7 @@ public:
      * @details Target edge length h(x, y) in map units: min over the feature-distance term, the
      * terrain term and region overrides, clamped to [size of areaFloor, maxSize] and
      * gradation-limited so that h(p) <= h(q) + gradation·|p − q| on the grid metric. Bilinear
-     * over cell centres. 0 on an invalid field.
+     * over cell centers. 0 on an invalid field.
      */
     [[nodiscard]] double sizeAt(double x, double y) const;
     /**
@@ -261,7 +261,7 @@ public:
      * approximation is not an exact Euclidean distance or conservative refinement bound. No
      * allocation/callback/state mutation.
      *
-     * @details Distance to the nearest seed at (x, y), bilinear over cell centres. Exposed for
+     * @details Distance to the nearest seed at (x, y), bilinear over cell centers. Exposed for
      * tests and diagnostics.
      */
     [[nodiscard]] double distanceAt(double x, double y) const;

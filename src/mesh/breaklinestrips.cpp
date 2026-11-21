@@ -292,7 +292,7 @@ QVector<FacingPair> findFacingPairs(const QVector<QVector<QPointF>> &lines,
         const double L = lineLen[i];
         if (L < opt.minStations * opt.station)
             continue;
-        // Stations at the centre of each step along the line.
+        // Stations at the center of each step along the line.
         QVector<Station> st;
         {
             int seg = firstSeg[i];

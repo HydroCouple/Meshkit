@@ -49,7 +49,7 @@ struct CellParamSpec {
      *  one place. */
     enum class Kind {
         Double, ///< Real value edited with a spin box (min, max, step, decimals).
-        Enum    ///< Integer code edited with a combo box labelled by enumLabels.
+        Enum    ///< Integer code edited with a combo box labeled by enumLabels.
     };
 
     QByteArray key;          ///< stable id, e.g. "mannings", "initDepth"
@@ -64,8 +64,8 @@ struct CellParamSpec {
     bool enabled = true; ///< false → unavailable in this generic editor
     QString tooltip;     ///< Translated tooltip text; may be empty.
     /*! Value kind. New members stay at the END of the struct: the registry
-     *  builds its entries with positional aggregate initialisers, which fall
-     *  back to these default member initialisers for anything they omit. */
+     *  builds its entries with positional aggregate initializers, which fall
+     *  back to these default member initializers for anything they omit. */
     Kind kind = Kind::Double;
     /*! Choice labels for \c Kind::Enum, in the enumeration's own order. The
      *  stored value is the enum's integer, not the label index — the labels

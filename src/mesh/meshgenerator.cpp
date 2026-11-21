@@ -1378,7 +1378,7 @@ QVector<QPointF> subPolyline(const QVector<QPointF> &pts, double s0, double s1)
  * path containment. Allocates ring copy, no source mutation/retained arguments or IO.
  *
  * @details A conduit's plain end beside its strip: outside the outline and at least half of \p
- * clear from it, except where it meets the strip at a cap centre.
+ * clear from it, except where it meets the strip at a cap center.
  */
 bool endClearOf(const QVector<QPointF> &piece, const QPolygonF &outline, const QPointF &capA,
                 const QPointF &capB, double clear)
@@ -1839,7 +1839,7 @@ JoinReport joinConstraints(QVector<Poly> &polys, const QVector<QPointF> &anchors
                         continue;
                     // Decide the crossing exactly: two collinear pieces of
                     // one straight line have a rounding-noise den, and t, u
-                    // can then land inside (0, 1) for segments metres apart.
+                    // can then land inside (0, 1) for segments meters apart.
                     const auto straddles = [](const QPointF &a, const QPointF &b, const QPointF &c,
                                               const QPointF &d) {
                         const double oc = ConstrainedDelaunay::orientExact(a, b, c),
@@ -2284,7 +2284,7 @@ MeshResult MeshGenerator::generateOnce(QPair<qint64, qint64> *leaked) const
     };
     // Lines that cross or come closer than the refinement floor share
     // vertices from here on (pipes crossing in plan, a node beside its pipe,
-    // two alignments through one manhole digitised apart).
+    // two alignments through one manhole digitized apart).
     {
         QVector<QPointF> anchors;
         anchors.reserve(m_steiners.size());
@@ -2620,7 +2620,7 @@ MeshResult MeshGenerator::generateOnce(QPair<qint64, qint64> *leaked) const
         ++m_stats.regionPatches;
     }
     // Conduit strips: the line runs along the middle row. Each end is left as
-    // a plain constrained line one width long — two, four when a neighbour
+    // a plain constrained line one width long — two, four when a neighbor
     // leaves the junction at an acute angle — so strips never meet there.
     for (int pi = 0; pi < polys.size(); ++pi) {
         if (!(polys[pi].stripWidth > 0.0) || polys[pi].dropped)
@@ -2642,8 +2642,8 @@ MeshResult MeshGenerator::generateOnce(QPair<qint64, qint64> *leaked) const
             // Stations no longer than the room beside the strip either. The
             // spacing below never exceeds 2w / across <= w, so room beyond 2w
             // changes nothing; searching out to the local size (up to the
-            // largest cell size, kilometres) made every strip scan the whole
-            // neighbourhood.
+            // largest cell size, kilometers) made every strip scan the whole
+            // neighborhood.
             const double room =
                 clearanceOf(centre, std::min(hMid, 2.0 * w) + 0.5 * w, pi, nullptr, kNone, kNone) -
                 0.5 * w;
@@ -3048,7 +3048,7 @@ MeshResult MeshGenerator::generateOnce(QPair<qint64, qint64> *leaked) const
     // a point is kept where the local target edge falls in its band, inside
     // the domain and holes, and at least half a spacing from every
     // constraint. Refinement then only fills band transitions and the
-    // neighbourhood of constraints, so open areas stay near-equilateral.
+    // neighborhood of constraints, so open areas stay near-equilateral.
     if (m_opts.latticeSeeding && hMin > 0.0 &&
         (haveHook || hUniform > 0.0 || !spacingOverrides.isEmpty())) {
         QRectF bbox;
@@ -3156,7 +3156,7 @@ MeshResult MeshGenerator::generateOnce(QPair<qint64, qint64> *leaked) const
             qo.maximumSizingRepairInsertions=m_opts.maximumSizingRepairInsertions;
         }
         // Store only fixed perimeter edges. Refinement cannot split these
-        // stations; it can reduce an oversized triangular neighbour instead.
+        // stations; it can reduce an oversized triangular neighbor instead.
         QHash<EdgeKey,double> fixedSizes;
         if(m_opts.unifiedCellPlanning && m_opts.maximumAdjacentRatio>=1) {
             QHash<QPair<qint64,qint64>,int> fixedVertices;
@@ -3629,8 +3629,8 @@ MeshResult MeshGenerator::generateOnce(QPair<qint64, qint64> *leaked) const
                 return interfaceRetry(patchOwners.value(it.key()),QStringLiteral("a nonconforming delivered interface"),false);
             const QPointF at = 0.5 * (a + b) + patchOrigin;
             // Diagnose: a vertex on the edge means a T-junction; none means
-            // the neighbouring cell was removed (a leaking region removal).
-            QString cause = QStringLiteral("the neighbouring cell is missing");
+            // the neighboring cell was removed (a leaking region removal).
+            QString cause = QStringLiteral("the neighboring cell is missing");
             const QPointF d = b - a;
             const double len2 = d.x() * d.x() + d.y() * d.y();
             for (int vi = 0; vi < result.vertices.size() && len2 > 0; ++vi) {

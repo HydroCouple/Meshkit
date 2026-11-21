@@ -2,7 +2,7 @@
 """Native MeshKit meshing and streaming I/O (``meshkit._meshkit``).
 
 The extension is written against the CPython C API and carries no docstrings of
-its own. This stub states its signatures and documents its behaviour for type
+its own. This stub states its signatures and documents its behavior for type
 checkers and for the Sphinx reference, which imports it instead of the compiled
 module. Import the public names from :mod:`meshkit`.
 
@@ -142,7 +142,7 @@ class Job:
         Returns
         -------
         MeshResult
-            The mesh and report. A refused or cancelled job returns empty geometry
+            The mesh and report. A refused or canceled job returns empty geometry
             with the reason in :attr:`MeshResult.report`; it does not raise.
 
         Raises

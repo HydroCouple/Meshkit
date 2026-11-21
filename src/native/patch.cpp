@@ -95,7 +95,7 @@ bool ringIsStrictlyConvex(const Vector<Point2> &ring) noexcept
     return true;
 }
 
-/*! A polyline parametrised by normalised arc length t in [0,1]. */
+/*! A polyline parametrized by normalized arc length t in [0,1]. */
 struct ArcPolyline {
     Vector<Point2> pts;
     Vector<double> cum; ///< cum[i] = arc length from pts[0] to pts[i].
@@ -141,7 +141,7 @@ struct ArcPolyline {
 };
 
 /*! A broad phase over boundary edges; cells are never compared pairwise.
- *  Positive cells with cancelling interior edges and a simple boundary have
+ *  Positive cells with canceling interior edges and a simple boundary have
  *  winding number one inside that boundary, so they cannot overlap. */
 struct BoundaryIndex {
     struct Box {
@@ -433,10 +433,10 @@ Text validate(const StructuredPatch &p)
 Text validate(const SweptPatch &p)
 {
     if (p.centreline.size() < 2)
-        return Text("Swept patch centreline needs at least 2 points.");
+        return Text("Swept patch centerline needs at least 2 points.");
     for (int i = 0; i < p.centreline.size(); ++i)
         if (!finitePt(p.centreline[i]))
-            return Text("Swept patch centreline has a non-finite coordinate at station %1.").arg(i);
+            return Text("Swept patch centerline has a non-finite coordinate at station %1.").arg(i);
     if (!(p.width > 0.0) || !std::isfinite(p.width))
         return Text("Swept patch width must be > 0.");
     if (p.across < 1)
@@ -446,12 +446,12 @@ Text validate(const SweptPatch &p)
     for (int i = 1; i < p.centreline.size(); ++i)
         if (p.centreline[i].x() == p.centreline[i - 1].x() &&
             p.centreline[i].y() == p.centreline[i - 1].y())
-            return Text("Swept patch centreline has a repeated vertex at station %1.").arg(i);
+            return Text("Swept patch centerline has a repeated vertex at station %1.").arg(i);
     return sweptStationCounts(p);
 }
 
 /**
- * @brief Validate finite convex CCW cells, cancelling shared edges and one exact simple
+ * @brief Validate finite convex CCW cells, canceling shared edges and one exact simple
  * perimeter.
  * @param[in] pm Borrowed patch, unchanged; patches with no vertices/quads or excessive counts
  * reject.
@@ -778,7 +778,7 @@ static PatchMesh transfiniteImpl(const Vector<Vector<Point2>> &sides, int n, int
                             .arg((k + 1) % 4));
     }
 
-    // Side curves, all arc-length parametrised on [0,1]:
+    // Side curves, all arc-length parametrized on [0,1]:
     //   B(u) = sides[0], c0 -> c1        (bottom, v = 0)
     //   R(v) = sides[1], c1 -> c2        (right,  u = 1)
     //   T(u) = sides[2] reversed, c3 -> c2   (top,  v = 1)
@@ -1074,7 +1074,7 @@ PatchMesh makeMappedPatch(const Polygon &ring, const Vector<int> &corners, doubl
 }
 
 // ---------------------------------------------------------------------------
-// Swept patch along a centreline
+// Swept patch along a centerline
 // ---------------------------------------------------------------------------
 
 /**
@@ -1105,7 +1105,7 @@ PatchMesh makeSweptPatch(const SweptPatch &p, Text *err)
     }
     pm.tag = p.tag;
 
-    // Stations: the centreline vertices, each segment resampled to the
+    // Stations: the centerline vertices, each segment resampled to the
     // target along-spacing (original vertices always kept).
     Vector<int> segmentParts;
     int ns = 0;
@@ -1162,14 +1162,14 @@ PatchMesh makeSweptPatch(const SweptPatch &p, Text *err)
         const double lb = std::hypot(nb.x(), nb.y());
         if (lb < 1e-12) {
             if (err)
-                *err = Text("Swept patch centreline reverses on itself at station %1.").arg(i);
+                *err = Text("Swept patch centerline reverses on itself at station %1.").arg(i);
             return PatchMesh();
         }
         nb /= lb;
         const double c = nb.x() * n0.x() + nb.y() * n0.y(); // cos(half turn)
         if (c < 1e-6) {
             if (err)
-                *err = Text("Swept patch centreline turns too sharply at station %1.").arg(i);
+                *err = Text("Swept patch centerline turns too sharply at station %1.").arg(i);
             return PatchMesh();
         }
         offs[i] = nb / c; // mitre length

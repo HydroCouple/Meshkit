@@ -169,7 +169,7 @@ const QVector<CellParamSpec> &cellParamSpecs()
         }
         // ---- Live: per-cell infiltration (GUI plan §3.5(2), phase GG0b) ----
         // Values resolve through mesh::resolveInfil, so a cell inheriting from
-        // its region tag reads back the region's numbers; an edit materialises
+        // its region tag reads back the region's numbers; an edit materializes
         // a per-cell [2D_INFILTRATION] override. Parameter columns are masked
         // per row by the resolved METHOD (mesh::infilUsesParam) — a cell whose
         // method does not use a slot renders "—" and refuses edits.

@@ -3,7 +3,7 @@
 Preparing source geometry
 =========================
 
-Surveyed or digitised outlines often carry far more vertices than a mesh needs.
+Surveyed or digitized outlines often carry far more vertices than a mesh needs.
 :func:`meshkit.prepare_sources` removes vertices within per-feature tolerances,
 audits the result independently, and returns buffers that
 :func:`meshkit.prepared_request` turns into a job request without building

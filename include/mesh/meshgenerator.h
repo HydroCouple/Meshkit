@@ -167,7 +167,7 @@ struct GenerationOptions {
     /*! Seed free vertices on hexagonal lattices graded by the size field
      *  before refinement, so open areas come out near-equilateral
      *  (MESH_REGIONAL_TRIQUAD_PLAN D-R6). false = refinement places every
-     *  point (the previous behaviour, bit-identical). */
+     *  point (the previous behavior, bit-identical). */
     bool latticeSeeding = false;
     /*! Passes of non-degrading smoothing on free vertices after refinement
      *  (ConstrainedDelaunay::QualityOptions::smoothingPasses). 0 = off. */
@@ -184,7 +184,7 @@ struct GenerationOptions {
      *  ResolutionAware it must be finite and > 0, else generate() fails. */
     /** @var normalVerticalToXY
      *  Factor turning elevation differences into XY units for ResolutionAware facet normals
-     *  (vertical / horizontal metres per unit); finite and > 0 with that order. */
+     *  (vertical / horizontal meters per unit); finite and > 0 with that order. */
     double coarseningReferenceSize=10,normalVerticalToXY=1;
 
     /*! Smallest spacing between distinct channel corridor vertices (lattice
@@ -219,7 +219,7 @@ struct GenerationOptions {
      *  patch gate is active (unifiedCellPlanning or terrainToleranceForFootprint): a failing
      *  required patch fails generation, a preferred one falls back to triangles. */
     double minimumRequiredEdge = 0;
-    /*! Largest size ratio, sqrt of the area ratio, between neighbouring triangles, enforced by
+    /*! Largest size ratio, sqrt of the area ratio, between neighboring triangles, enforced by
      *  the sizing repair passes (verifiedSizing only). 0 = off, else >= 1. With
      *  unifiedCellPlanning it also bounds triangles beside fixed patch edges and is audited
      *  across patch interfaces, which can trigger a retry. */

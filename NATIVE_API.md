@@ -42,7 +42,7 @@ Crossing lines must be noded before using the native job API; the transitional G
 pipeline has its existing intersection preparation. Near coordinates remain
 distinct; minimum target size never becomes a welding radius in this API.
 
-`Metadata` declares metres per XY unit and metres per Z unit. Size/edge policies
+`Metadata` declares meters per XY unit and meters per Z unit. Size/edge policies
 and provider footprint bounds use XY units; elevation and error tolerance use Z
 units. The facet-normal scale derives from the physical unit scales. No CRS
 conversion occurs here. Unknown units fail a job; imported SMS 2DM units start
@@ -171,7 +171,7 @@ meshkit inspect rectangle.mkb
 meshkit convert rectangle.mkb rectangle.2dm --allow-loss
 ```
 
-`box` explicitly declares a flat rectangular domain, zero elevation and metre
+`box` explicitly declares a flat rectangular domain, zero elevation and meter
 units. `--overwrite` permits replacement. SIGINT/SIGTERM request cancellation.
 No mesh bounds, units, terrain source or missing domain are silently inferred by
 an import-to-job shortcut.

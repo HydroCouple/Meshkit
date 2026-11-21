@@ -54,8 +54,8 @@ public:
         NormalFlow = 1,          ///< Manning outflow at bed slope
         SpecifiedStageConst = 2, ///< Fixed water-surface elevation
         SpecifiedStageTS = 3,    ///< Time-varying water-surface elevation
-        SpecifiedFlowConst = 4,  ///< Fixed discharge per metre of edge
-        SpecifiedFlowTS = 5,     ///< Time-varying discharge per metre
+        SpecifiedFlowConst = 4,  ///< Fixed discharge per meter of edge
+        SpecifiedFlowTS = 5,     ///< Time-varying discharge per meter
         RatingCurve = 6,         ///< Stage → flow lookup
     };
     Q_ENUM(Type)

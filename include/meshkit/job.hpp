@@ -180,7 +180,7 @@ struct JobRequest {
      */
     std::vector<plan::QuadRegion> quadRegions;
     /**
-     * @brief Local quad patches inserted as given after validation; every cell centre must lie in
+     * @brief Local quad patches inserted as given after validation; every cell center must lie in
      * the domain. Rejected when options.cells is CellPlan::Triangles.
      */
     std::vector<plan::PatchMesh> fixedPatches;

@@ -115,7 +115,7 @@ inline void edgeEndpoints(const MeshTriangle &t, int k, int &a, int &b) noexcept
  * @param[in] nv Real edge count 3 or 4, excludes triangle padding.
  * @param[in] flux Required nonnull stable flat array of at least 4*(cell+1) floats,
  * outward-positive m3/s.
- * @param[in] length Required nonnull equally sized edge lengths in metres; <=1e-12 skips an
+ * @param[in] length Required nonnull equally sized edge lengths in meters; <=1e-12 skips an
  * edge.
  * @param[in] nx Required nonnull equally sized outward unit-normal x components, dimensionless.
  * @param[in] ny Required nonnull equally sized outward unit-normal y components, dimensionless.
@@ -180,11 +180,11 @@ inline bool rt0CellDischarge(int cell, int nv, const float *flux, const float *l
  * @param[in] cell Nonnegative valid cell index, stride-four address arithmetic must fit int.
  * @param[in] nv Number of real edges 3 or 4, no padding read.
  * @param[in] flux Nonnull stable flat outward volumetric fluxes m3/s, extent>=4*(cell+1).
- * @param[in] length Nonnull stable equal-extent lengths metres.
+ * @param[in] length Nonnull stable equal-extent lengths meters.
  * @param[in] nx Nonnull stable equal-extent outward unit-normal x components.
  * @param[in] ny Nonnull stable equal-extent outward unit-normal y components.
- * @param[in] depth Finite positive hydraulic depth in metres; below dryDepth refuses.
- * @param[in] dryDepth Dry threshold in metres; caller supplies nonnegative finite policy value,
+ * @param[in] depth Finite positive hydraulic depth in meters; below dryDepth refuses.
+ * @param[in] dryDepth Dry threshold in meters; caller supplies nonnegative finite policy value,
  * threshold equality is wet, depth<=0 always refuses.
  * @param[out] vx Borrowed x velocity m/s, set zero before validation; can be nonfinite if final
  * division fails.

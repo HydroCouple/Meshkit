@@ -79,7 +79,7 @@ public:
     /**
      * @brief Append copies of all elements of @p v.
      * @param[in] v Source vector; must not be this vector (self-insertion through
-     * `std::vector::insert` is undefined behaviour).
+     * `std::vector::insert` is undefined behavior).
      */
     void append(const Vector &v) { this->insert(this->end(), v.begin(), v.end()); }
     /**

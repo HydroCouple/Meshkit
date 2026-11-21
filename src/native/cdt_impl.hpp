@@ -747,7 +747,7 @@ bool BasicConstrainedDelaunay<Storage>::build(const PointInput &points, Vector<i
     m_liveTriangles = 1;
     m_vertexTri[m_superBase] = m_vertexTri[m_superBase + 1] = m_vertexTri[m_superBase + 2] = 0;
 
-    // Insertion order: Morton on a 2^20 quantisation (deterministic, local).
+    // Insertion order: Morton on a 2^20 quantization (deterministic, local).
     Vector<std::pair<std::uint64_t, int>> order(m_superBase);
     const double sx = bbox.width() > 0 ? 1048575.0 / bbox.width() : 0.0;
     const double sy = bbox.height() > 0 ? 1048575.0 / bbox.height() : 0.0;
@@ -850,7 +850,7 @@ bool BasicConstrainedDelaunay<Storage>::insertConstraintImpl(int a, int b, std::
         isSuperVertex(b))
         return false;
     int e = -1;
-    // Record the input segment and the piece an edge realises. A second
+    // Record the input segment and the piece an edge realizes. A second
     // constraint over the same edge (an overlap) adds its origin.
     auto record = [&](int x, int y) {
         const std::uint64_t k = edgeKey64(x, y);
@@ -1228,7 +1228,7 @@ template <class Storage> int BasicConstrainedDelaunay<Storage>::splitSubsegment(
  *  vertices on different input pieces that share an input vertex, at the
  *  same distance from it (concentric shells) — the triangle is thin because
  *  the input angle is, and splitting it would never end. (Pieces, not
- *  origins: a segment split at a vertex lying on it meets its neighbour at
+ *  origins: a segment split at a vertex lying on it meets its neighbor at
  *  that vertex.) */
 template <class Storage>
 bool BasicConstrainedDelaunay<Storage>::exemptShortestEdge(int u, int v) const
@@ -1502,7 +1502,7 @@ auto BasicConstrainedDelaunay<Storage>::refineQuality(const QualityOptions &opt)
     };
     const double theta = std::clamp(opt.minAngleDeg, 0.0, 60.0) * M_PI / 180.0;
     const double sinMin = std::sin(theta);
-    // Üngör's off-centre at Triangle's 0.475 factor: the new triangle on the
+    // Üngör's off-center at Triangle's 0.475 factor: the new triangle on the
     // shortest edge gets an apex angle just over the bound.
     const double offK =
         theta > 0.0 ? 0.475 * std::sqrt((1.0 + std::cos(theta)) / (1.0 - std::cos(theta))) : 0.0;

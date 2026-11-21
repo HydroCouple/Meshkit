@@ -1,11 +1,11 @@
 /**
  * @file      naturalnbinterpolator.cpp
- * @brief     Natural-neighbour interpolation over a sparse set of scattered seed points (x, y, z).
+ * @brief     Natural-neighbor interpolation over a sparse set of scattered seed points (x, y, z).
  * @author    Caleb Buahin <caleb.buahin@gmail.com>
  * @date      2026
  * @license   Apache-2.0
  *
- * Natural-neighbour (Sibson / Laplace) interpolation built on a Delaunay
+ * Natural-neighbor (Sibson / Laplace) interpolation built on a Delaunay
  * triangulation of the seed points from the in-house kernel
  * (mesh/meshcdt.h).  See naturalnbinterpolator.h for the algorithm overview.
  * @copyright Copyright (c) 2026 Caleb Buahin. All rights reserved.
@@ -31,7 +31,7 @@ namespace
 
 constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
 
-// All internal geometry runs in a normalised [0,~1] space (see build()), so
+// All internal geometry runs in a normalized [0,~1] space (see build()), so
 // these absolute tolerances behave like relative ones in the source CRS.
 constexpr double kOrientEps = 1e-12; // collinearity / on-edge tolerance
 constexpr double kInCircEps = 1e-12; // in-circle tolerance
@@ -116,7 +116,7 @@ bool NaturalNeighbourInterpolator::build(const QVector<QPointF> &pts, const QVec
         return setErr(QStringLiteral("seed point / value count mismatch"));
 
     // ── Snap-dedupe coincident points before Delaunay insertion ────
-    // Same 1e-7 quantisation as the pipeline's keyOf().  Keep first z per key.
+    // Same 1e-7 quantization as the pipeline's keyOf().  Keep first z per key.
     QHash<QPair<qint64, qint64>, int> seen;
     seen.reserve(pts.size());
     std::vector<double> ux, uy, uz;
@@ -143,9 +143,9 @@ bool NaturalNeighbourInterpolator::build(const QVector<QPointF> &pts, const QVec
 
     const int n = int(ux.size());
     if (n < 3)
-        return setErr(QStringLiteral("need >= 3 unique seed points for natural neighbour"));
+        return setErr(QStringLiteral("need >= 3 unique seed points for natural neighbor"));
 
-    // ── Normalise to a local [0,~1] space for numeric conditioning ───────
+    // ── Normalize to a local [0,~1] space for numeric conditioning ───────
     double minx = ux[0], miny = uy[0], maxx = ux[0], maxy = uy[0];
     for (int i = 1; i < n; ++i) {
         minx = std::min(minx, ux[i]);
@@ -171,7 +171,7 @@ bool NaturalNeighbourInterpolator::build(const QVector<QPointF> &pts, const QVec
             QStringLiteral("Delaunay failed (collinear or too few seeds): %1").arg(cdt.errorMsg()));
     for (int i = 0; i < n; ++i)
         if (vertexOf[i] != i)
-            return setErr(QStringLiteral("coincident seeds after normalisation"));
+            return setErr(QStringLiteral("coincident seeds after normalization"));
     cdt.removeSuperTriangles();
 
     // ── Copy into owned arrays (order preserved → z aligns by index) ─────
@@ -226,7 +226,7 @@ bool NaturalNeighbourInterpolator::build(const QVector<QPointF> &pts, const QVec
 }
 
 // Jump-and-walk point location.  Returns triangle index, or -1 if (qx,qy) is
-// outside the convex hull.  Coordinates are in normalised space.
+// outside the convex hull.  Coordinates are in normalized space.
 int NaturalNeighbourInterpolator::locate(double qx, double qy) const
 {
     int t = m_lastTri;
@@ -236,7 +236,7 @@ int NaturalNeighbourInterpolator::locate(double qx, double qy) const
     const int cap = 2 * m_numTri + 8;
     for (int iter = 0; iter < cap; ++iter) {
         const int v0 = m_tris[3 * t], v1 = m_tris[3 * t + 1], v2 = m_tris[3 * t + 2];
-        // CCW edges (v0->v1),(v1->v2),(v2->v0); neighbour opposite the 3rd vertex.
+        // CCW edges (v0->v1),(v1->v2),(v2->v0); neighbor opposite the 3rd vertex.
         if (orient2d(m_px[v0], m_py[v0], m_px[v1], m_py[v1], qx, qy) < -kOrientEps) {
             const int nb = m_nbrs[3 * t + 2]; // opposite v2, across (v0,v1)
             if (nb < 0)
@@ -341,8 +341,8 @@ bool NaturalNeighbourInterpolator::computeWeights(double qx, double qy,
         }
     }
 
-    // ── (2) Boundary edges → natural neighbours; new circumcenters ───────
-    // For each natural-neighbour vertex collect old circumcenters (incident
+    // ── (2) Boundary edges → natural neighbors; new circumcenters ───────
+    // For each natural-neighbor vertex collect old circumcenters (incident
     // cavity triangles) and new circumcenters (incident boundary edges).
     bool anyNew = false;
     for (const int t : m_cavity) {
@@ -376,19 +376,19 @@ bool NaturalNeighbourInterpolator::computeWeights(double qx, double qy,
     if (!anyNew)
         return false;
 
-    // ── (3) Per-neighbour weights ────────────────────────────────────────
+    // ── (3) Per-neighbor weights ────────────────────────────────────────
     // Emitted in first-met order (deterministic); weightsAt() sorts a copy by
     // seed index for its callers.
     out.reserve(static_cast<size_t>(m_nSlots));
     for (int si = 0; si < m_nSlots; ++si) {
         const NbSlot &slot = m_slots[static_cast<size_t>(si)];
         if (slot.ncs.empty())
-            continue; // not a natural neighbour
+            continue; // not a natural neighbor
         const int pi = slot.v;
         const std::vector<QPointF> &ncs = slot.ncs;
 
         // Exact coincidence with a seed → that seed takes the whole weight,
-        // which makes the normalised interpolant reduce to its z exactly.
+        // which makes the normalized interpolant reduce to its z exactly.
         const double dx = m_px[pi] - qx, dy = m_py[pi] - qy;
         const double dist2 = dx * dx + dy * dy;
         if (dist2 < kSeedEps * kSeedEps) {
@@ -405,7 +405,7 @@ bool NaturalNeighbourInterpolator::computeWeights(double qx, double qy,
             const double ey = ncs[0].y() - ncs[1].y();
             const double facet = std::sqrt(ex * ex + ey * ey);
             w = facet / std::sqrt(dist2);
-        } else // Sibson — area Q steals from neighbour pi
+        } else // Sibson — area Q steals from neighbor pi
         {
             // Ring = new circumcenters (incident boundary edges) +
             //        old circumcenters (incident cavity triangles).
@@ -483,7 +483,7 @@ bool NaturalNeighbourInterpolator::weightsAt(double x, double y,
         out.append({m_seedOf[static_cast<size_t>(pi)], wi / wsum});
 
     // Ascending original-seed order — contractual, since computeWeights walks a
-    // QHash whose iteration order is randomised per process.
+    // QHash whose iteration order is randomized per process.
     std::sort(out.begin(), out.end(), [](const QPair<int, double> &a, const QPair<int, double> &b) {
         return a.first < b.first;
     });

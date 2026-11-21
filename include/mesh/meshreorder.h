@@ -11,9 +11,9 @@
  * [2D_TRIANGLES]/[2D_VERTICES] (no renumbering happens at load), and its
  * explicit marcher's hot loops are memory-bound with scattered per-cell
  * reads through cL/cR and cell→edge CSR indirection. Refinement insertion can
- * leave neighbouring cells far apart in the arrays. Sorting triangles along a Hilbert
+ * leave neighboring cells far apart in the arrays. Sorting triangles along a Hilbert
  * curve of their centroids (and renumbering vertices by first appearance in
- * the new triangle order) makes spatial neighbours index-adjacent — better
+ * the new triangle order) makes spatial neighbors index-adjacent — better
  * cache-line reuse in the flux/state loops, more contiguous active-set tier
  * ranges under spatially coherent wetting, and better render-chunk locality
  * in the GUI — with zero engine changes.

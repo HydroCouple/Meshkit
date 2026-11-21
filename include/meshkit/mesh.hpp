@@ -125,9 +125,9 @@ struct VertexAlias {
 struct Metadata {
     /**
      * @var horizontalMetresPerUnit
-     * @brief Metres per XY plane unit, the unit of point and vertex x/y; default 1.
+     * @brief Meters per XY plane unit, the unit of point and vertex x/y; default 1.
      * @var verticalMetresPerUnit
-     * @brief Metres per Z (elevation) unit; default 1. runJob() scales elevation differences by
+     * @brief Meters per Z (elevation) unit; default 1. runJob() scales elevation differences by
      * verticalMetresPerUnit / horizontalMetresPerUnit when it ranks facet normals for
      * resolution-aware coarsening.
      */

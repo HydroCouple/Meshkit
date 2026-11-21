@@ -27,7 +27,7 @@ Formats
    lists what was dropped. Any extension other than ``.mkb`` is read as 2DM.
 
 Writes are atomic: the file is written to a temporary in the destination folder
-and published only when complete, so a failed or cancelled write leaves an
+and published only when complete, so a failed or canceled write leaves an
 existing file as it was. A failed read returns no partial mesh.
 
 .. _file-options:

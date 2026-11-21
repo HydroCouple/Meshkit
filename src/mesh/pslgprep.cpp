@@ -329,7 +329,7 @@ QVector<bool> flagsForCoincidentVertices(const QVector<QPointF> &pts,
     if (pts.isEmpty() || tol < 0.0)
         return flags;
     // Hash the other vertices on a grid of cell size tol (or a tiny cell
-    // for exact matching) and probe the 3x3 neighbourhood.
+    // for exact matching) and probe the 3x3 neighborhood.
     const double cell = tol > 0.0 ? tol : 1e-9;
     QHash<QPair<qint64, qint64>, QVector<QPointF>> grid;
     auto key = [&](const QPointF &p) {

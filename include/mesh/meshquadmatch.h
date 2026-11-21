@@ -23,7 +23,7 @@
  *     pairs as many as possible; an alternating-4-cycle polish then swaps
  *     pairs when Σ score increases. Unmatched triangles stay triangles.
  *
- * Output honours the engine cell order (triangles first, then quads; existing
+ * Output honors the engine cell order (triangles first, then quads; existing
  * quads keep their relative order after the new ones are appended behind
  * them — see meshquadmerge.cpp for the same rebuild) and emits every quad
  * CCW. Callers pass all cells of the mesh; only \p cellIds are touched.

@@ -66,7 +66,7 @@ void reorderMeshHilbert(MeshResult *m)
     if (nt == 0 || nv == 0)
         return;
 
-    // Vertex bbox → 16-bit quantisation frame for the centroid keys.
+    // Vertex bbox → 16-bit quantization frame for the centroid keys.
     double x0 = std::numeric_limits<double>::max(), y0 = x0;
     double x1 = std::numeric_limits<double>::lowest(), y1 = x1;
     for (const MeshVertex &v : m->vertices) {

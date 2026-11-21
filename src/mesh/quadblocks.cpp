@@ -16,7 +16,7 @@ QuadBlockGrid quadBlockGridFromMesh(const MeshResult&m,double pitch,const QVecto
  * (NaN). Must be non-empty: this adapter always wraps it, so an empty f throws
  * std::bad_function_call instead of returning an invalid grid.
  * @param[in] b Feature polylines in the same units, sampled every half pitch; each sample
- * marks its cell and the 8 neighbours unusable (repeat the first point to close a ring).
+ * marks its cell and the 8 neighbors unusable (repeat the first point to close a ring).
  * @param[in] cancel Optional; polled every 4096 cells or blocker samples.
  * @param[in] cap Upper bound on cols × rows; must be >= 1.
  * @return The grid, or an invalid default grid on an invalid rectangle or pitch, cap < 1,

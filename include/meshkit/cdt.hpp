@@ -8,7 +8,7 @@
  *
  * Constrained Delaunay triangulation kernel
  * (workplans/MESH_OVERHAUL_PLAN_2026-09-29.md Stage 4). Replaces Triangle
- * for the mesh generator and for the natural-neighbour interpolator's
+ * for the mesh generator and for the natural-neighbor interpolator's
  * Delaunay.
  *
  *  - Incremental insertion in Morton order with walking point location;
@@ -20,11 +20,11 @@
  *  - Regions are the connected components of triangles bounded by
  *    constrained edges; removeExterior() drops the component touching the
  *    bounding super-triangle, removeRegionAt() drops the one containing a
- *    point (a hole seed, a core cell centre).
+ *    point (a hole seed, a core cell center).
  *  - refineQuality() is Delaunay refinement with Ruppert's and Shewchuk's
  *    rules (workplans/MESH_TRIANGLE_ENGINE_PLAN_2026-09-30.md §4): encroached
  *    subsegments are split (concentric shells at acute input corners), bad
- *    triangles receive an off-centre or circumcentre, and a point that would
+ *    triangles receive an off-center or circumcenter, and a point that would
  *    encroach a subsegment splits the subsegment instead. The target can remain unmet because of resource caps, numeric limits,
  *    fixed edges or the wedge of two segments
  *    meeting at a small input angle and next to fixed (unsplittable) edges.
@@ -59,7 +59,7 @@ namespace meshkit
  * vertices inserted later. All coordinates share one Cartesian XY frame; the kernel performs
  * no unit conversion. An instance has no internal synchronization: mutating calls need
  * exclusive access and const calls must not race a mutation. The exact-predicate tables are
- * initialised once per process under std::call_once.
+ * initialized once per process under std::call_once.
  */
 template <class Storage> class BasicConstrainedDelaunay
 {
@@ -86,7 +86,7 @@ public:
      */
     struct Triangle {
         int v[3];   ///< Counter-clockwise.
-        int adj[3]; ///< Neighbour across the edge opposite v[i] (v[i+1], v[i+2]); -1 = none.
+        int adj[3]; ///< Neighbor across the edge opposite v[i] (v[i+1], v[i+2]); -1 = none.
         bool constrained[3]; ///< Edge opposite v[i] is a constraint.
         /// False once the slot is removed (removeExterior(), removeSuperTriangles(), region
         /// removal, vertex removal); readers must skip dead slots.
@@ -277,7 +277,7 @@ public:
          *  when an over-cap triangle's size point is blocked only by fixed edges. */
         std::function<double(const Point *)> maximumAreaForTriangle;
         /** @brief Sizing-repair only. When >= 1, a live triangle is a size target if the
-         *  square root of its area over a live, non-super neighbour's area, or its
+         *  square root of its area over a live, non-super neighbor's area, or its
          *  equilateral-equivalent edge length over fixedNeighbourSize(), exceeds this ratio.
          *  Below 1 (default 0) disables both checks. */
         double maximumAdjacentRatio = 0;
@@ -504,10 +504,10 @@ public:
      * object or race shared state; temporary pointers expire after each invocation. cancelled is
      * polled periodically, not before every operation or smoothing step.
      * @return Report with inserted/split/reason counts, caps/cancellation, optional final
-     * terrain diagnostics and coarsening statistics. Capped/cancelled run RETAINS completed
+     * terrain diagnostics and coarsening statistics. Capped/canceled run RETAINS completed
      * topology edits, no rollback. Caps are checked after insertions and count live slot growth;
      * slight cell-limit overshoot is possible. Coarsening can still run after a cap unless
-     * cancelled, with per-vertex attempts clamped [1,10]. Unsplittable edges, small-angle
+     * canceled, with per-vertex attempts clamped [1,10]. Unsplittable edges, small-angle
      * exemptions, min spacing, numeric limits and resource caps can leave unresolved
      * angle/size/terrain targets; report is not a quality-success certificate. terrainFinalCheck
      * false leaves final residual counters zero without verification. Smoothing moves only free
@@ -677,7 +677,7 @@ public:
      * then nearest forward collinear neighbor. Not a generic graph shortest path; no alive-only
      * filtering/geometry mutation/IO.
      *
-     * @details The vertices from a to b along the constrained edges that realise the input
+     * @details The vertices from a to b along the constrained edges that realize the input
      * constraint (a, b) — {a, b} when it is one edge, more when vertices lying on the segment or
      * refinement split it. Empty when no such chain.
      */

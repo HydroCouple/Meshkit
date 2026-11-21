@@ -19,11 +19,11 @@
  *    two edges disappear). Vertices are compacted at the end; the remap is
  *    returned so callers can translate ids they still hold.
  *  - Diagonal swap: two quads sharing an edge (a,b), union hexagon; the other
- *    two diagonalisations are tried and adopted when Σ|valence − 4| over the
+ *    two diagonalizations are tried and adopted when Σ|valence − 4| over the
  *    six vertices drops and both new quads pass the bounds.
  *  - Smoothing ("parallelogram" smoothing, a quad-aware Laplacian): a movable
  *    vertex v moves to the mean over incident quads of (prev + next − opposite)
- *    and over incident triangles of the neighbour centroid; the move is
+ *    and over incident triangles of the neighbor centroid; the move is
  *    accepted only when the minimum scaled Jacobian over every incident cell
  *    does not decrease, every incident quad stays convex, and no aspect-cap
  *    violation is introduced or worsened. Iterated
@@ -55,7 +55,7 @@ struct QuadCleanupOptions {
     /// uses their scaled-Jacobian floor and aspect cap (see QuadQualityBounds).
     QuadQualityBounds bounds;
     bool removeDoublets = true; ///< Merge the two quads around each movable doublet vertex.
-    bool diagonalSwaps = true;  ///< Re-diagonalise quad pairs when it lowers valence error.
+    bool diagonalSwaps = true;  ///< Re-diagonalize quad pairs when it lowers valence error.
     int smoothingIterations = 10; ///< Jacobi smoothing sweeps after topology; <= 0 = none.
     /// Maximum doublet + swap rounds; stops early when a round changes nothing; <= 0 = none.
     int topologyPasses = 3;

@@ -1,11 +1,11 @@
 /**
  * @file      naturalnbinterpolator.h
- * @brief     Natural-neighbour interpolation over a sparse set of scattered seed points (x, y, z).
+ * @brief     Natural-neighbor interpolation over a sparse set of scattered seed points (x, y, z).
  * @author    Caleb Buahin <caleb.buahin@gmail.com>
  * @date      2026
  * @license   Apache-2.0
  *
- * Natural-neighbour interpolation over a sparse set of scattered seed
+ * Natural-neighbor interpolation over a sparse set of scattered seed
  * points (x, y, z).  Used as an alternative to inverse-distance weighting
  * for the no-DTM elevation fallback in the mesh generator: when no terrain
  * raster is supplied, mesh-vertex z is interpolated from SWMM junction rim
@@ -13,16 +13,16 @@
  *
  * The seeds are triangulated once with the in-house Delaunay kernel (mesh/meshcdt.h) (the same
  * vendored library the MeshGenerator uses) to obtain a Delaunay
- * triangulation + neighbour adjacency.  Each query then performs a local
- * insertion (Watson's method) to recover the natural neighbours of the
+ * triangulation + neighbor adjacency.  Each query then performs a local
+ * insertion (Watson's method) to recover the natural neighbors of the
  * query point and their weights:
  *
  *   Sibson  — area-stealing coordinates: weight_i = (Voronoi area the query
- *             cell steals from neighbour i) / (total stolen area).  C1-smooth.
+ *             cell steals from neighbor i) / (total stolen area).  C1-smooth.
  *   Laplace — non-Sibsonian "edge" coordinates: weight_i = (length of the
- *             Voronoi facet between query and neighbour i) / ||query - p_i||.
+ *             Voronoi facet between query and neighbor i) / ||query - p_i||.
  *
- * Natural-neighbour interpolation is only defined inside the convex hull of
+ * Natural-neighbor interpolation is only defined inside the convex hull of
  * the seeds.  interpolate() returns NaN outside the hull and on any
  * degeneracy so the caller can fall back to IDW.
  *
@@ -48,7 +48,7 @@ namespace mesh
 {
 
 /**
- * @brief Natural-neighbour (Sibson or Laplace) interpolator over scattered (x, y, z) seeds.
+ * @brief Natural-neighbor (Sibson or Laplace) interpolator over scattered (x, y, z) seeds.
  *
  * build() copies and triangulates the seeds; interpolate() and weightsAt() then answer
  * queries inside the seeds' convex hull and return NaN / false elsewhere. The instance owns
@@ -59,7 +59,7 @@ class NaturalNeighbourInterpolator
 {
 public:
     /**
-     * @brief Natural-neighbour coordinate construction used by interpolate() and weightsAt():
+     * @brief Natural-neighbor coordinate construction used by interpolate() and weightsAt():
      * Sibson (default) uses area-stealing coordinates, Laplace uses Voronoi facet length
      * divided by the distance to the seed.
      */
@@ -177,12 +177,12 @@ public:
      * instance access, retains no output pointer and changes no source/project data.
      *
      * @details
-     * \brief Natural-neighbour weights at (x, y), keyed by ORIGINAL seed index.
+     * \brief Natural-neighbor weights at (x, y), keyed by ORIGINAL seed index.
      * \details Same scheme interpolate() uses; this exposes the coordinates themselves so a
      * caller can blend something other than a scalar z (e.g. whole rainfall time series).
-     * Weights are normalised to sum 1 and returned SORTED ASCENDING BY INDEX — the order is
+     * Weights are normalized to sum 1 and returned SORTED ASCENDING BY INDEX — the order is
      * contractual, because the underlying accumulation walks a QHash whose iteration order is
-     * randomised per process, and callers that hash these weights need reproducibility.
+     * randomized per process, and callers that hash these weights need reproducibility.
      * \note Not thread-safe for concurrent queries: inherits interpolate()'s mutable walk-start
      * cache.  Use one instance per worker thread.
      */
@@ -219,13 +219,13 @@ private:
      * subsequently reject. Mutates instance stamps, walk hint and scratch arrays, can allocate,
      * retains no output reference; concurrent queries unsupported.
      *
-     * @details Shared core of interpolate() and weightsAt(): the raw, UNNORMALISED
-     * natural-neighbour weights at a normalised query point, in the order the neighbours are
+     * @details Shared core of interpolate() and weightsAt(): the raw, UNNORMALIZED
+     * natural-neighbor weights at a normalized query point, in the order the neighbors are
      * first met while walking the cavity — deterministic for a given triangulation and query.
      */
     bool computeWeights(double qx, double qy, std::vector<std::pair<int, double>> &out) const;
 
-    // Coordinates are normalised to a local [0,~1] space: translated by
+    // Coordinates are normalized to a local [0,~1] space: translated by
     // (-m_ox, -m_oy) (the seed bbox minimum) then divided by m_scale (the
     // larger bbox side).  This keeps orientation / in-circle / circumcenter
     // determinants well-conditioned at projected-CRS magnitudes.  z, and the
@@ -248,12 +248,12 @@ private:
     bool m_valid = false;
 
     double m_ox = 0.0, m_oy = 0.0; // local-origin translation
-    double m_scale = 1.0;          // normalisation scale (max bbox side)
+    double m_scale = 1.0;          // normalization scale (max bbox side)
 
     std::vector<double> m_px, m_py, m_pz; // per Delaunay vertex (translated x,y; raw z)
     std::vector<int> m_seedOf;            // Delaunay vertex -> original input index
     std::vector<int> m_tris;              // 3 * numTri vertex indices (CCW)
-    std::vector<int> m_nbrs;              // 3 * numTri neighbour tri indices (-1 = hull)
+    std::vector<int> m_nbrs;              // 3 * numTri neighbor tri indices (-1 = hull)
     std::vector<double> m_ccx, m_ccy;     // circumcenter per triangle (NaN if degenerate)
     int m_numTri = 0;
 

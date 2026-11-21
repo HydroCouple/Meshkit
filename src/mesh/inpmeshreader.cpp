@@ -112,7 +112,7 @@ using InitVelocityRowList = QVector<InitVelocityRow>;
  *
  * @details Every '\r' is removed, not only CRLF pairs, because that is what the former
  * QIODevice::Text read did (QIODevicePrivate::read drops each '\r'), so a stray CR inside a line
- * still joins its neighbours exactly as before.
+ * still joins its neighbors exactly as before.
  */
 bool readFileBytes(const QString &path, QByteArray *out, QString *err)
 {
@@ -432,7 +432,7 @@ QString parseCellRow(const Tokens &tok, bool isQuads, const RawFn &rawTrimmed, M
  * Hand-rolled rather than `split(QRegularExpression("\\s+"))`: this runs once per line, i.e.
  * ~2.3M times on a 1.5M-triangle `.2dm`, and the regex path allocated a fresh QStringList plus a
  * match context every time. Splitting on QChar::isSpace over a view of the original string is
- * behaviourally identical (`\s` and isSpace agree on the whitespace this format uses) and
+ * behaviorally identical (`\s` and isSpace agree on the whitespace this format uses) and
  * allocates only the tokens themselves.
  */
 QStringList tokenize(const QString &raw)
@@ -1372,8 +1372,8 @@ void applyBCRows(const MeshResult &mesh, const BCRowList &rows, QVector<MeshEdge
  *
  * @details Engine §11A — apply each `[2D_EDGE_CONVEYANCE]` row to every (cell, e) slot whose
  * endpoints match the row's vertex pair. Interior edges have two such slots (one per
- * neighbouring cell); both receive the same value, matching the engine's symmetry invariant.
- * Rows whose vertex pair doesn't match any edge are silently dropped (the writer canonicalises
+ * neighboring cell); both receive the same value, matching the engine's symmetry invariant.
+ * Rows whose vertex pair doesn't match any edge are silently dropped (the writer canonicalizes
  * on the lower vertex pair, but the engine accepts either order).
  */
 /*! Stamp collected `[2D_INITIAL_HGL]` rows onto the loaded cells, in file
@@ -1591,7 +1591,7 @@ InpMeshReadResult InpMeshReader::read(const QString &inpPath)
             // overlay external rows first, then .inp rows (so .inp overrides
             // on conflict).
             // NB: `slots` is a Qt keyword macro — use `nslots`.
-            // resize() on the empty vector value-initialises every slot to
+            // resize() on the empty vector value-initializes every slot to
             // MeshEdgeBC{}, so no second fill pass is needed.
             const int nslots = edgeSlotCount(result.mesh.triangles.size());
             result.edgeBCs.resize(nslots);
@@ -1616,7 +1616,7 @@ InpMeshReadResult InpMeshReader::read(const QString &inpPath)
         applyInitVelocityRows(result.mesh, inlineVelocity);
 
         const int nslots = edgeSlotCount(result.mesh.triangles.size());
-        result.edgeBCs.resize(nslots); // value-initialised to MeshEdgeBC{}
+        result.edgeBCs.resize(nslots); // value-initialized to MeshEdgeBC{}
         applyBCRows(result.mesh, inlineBCs, result.edgeBCs);
         applyConveyanceRows(result.mesh, inlineConv, result.edgeBCs);
     }

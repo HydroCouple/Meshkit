@@ -304,7 +304,7 @@ QString formatTriangleNodeMap(const MeshResult &mesh, const CouplingMap &couplin
 // - Trailing columns the method does not use are trimmed to
 //   mesh::infilParamCount(); the one interior unused slot (Curve Number's
 //   middle column) is emitted as `-` so the columns after it keep position.
-// - DEST is recognised as the last token when it is neither numeric nor `-`.
+// - DEST is recognized as the last token when it is neither numeric nor `-`.
 // - A NONE row carries neither parameters nor a destination.
 //
 // NOT appended to [2D_TRIANGLES]: its columns are positional
@@ -783,7 +783,7 @@ QString InpMeshWriter::buildSectionText(const MeshResult &mesh, const CouplingMa
     out.reserve(64 * mesh.vertices.size() + 64 * mesh.triangles.size());
 
     // Descriptive header — values are emitted verbatim and not used by the
-    // writer itself.  An engine that recognises `;; UNITS: SI (m)` can
+    // writer itself.  An engine that recognizes `;; UNITS: SI (m)` can
     // skip its FLOW_UNITS-based mesh scaling; older engines can ignore both
     // comment lines and treat the file as project-unit geometry.
     if (!units.linearUnitName.isEmpty())
@@ -1410,7 +1410,7 @@ bool InpMeshWriter::writeExternal(const QString &inpPath, const QString &meshFil
     // Delegate the bulk of the work to the existing overload, then patch
     // the BC section into the same .inp afterwards. Two passes keeps the
     // BC-write path orthogonal to the four-section path; if the user
-    // disables BCs the original behaviour is preserved.
+    // disables BCs the original behavior is preserved.
     if (!writeExternal(inpPath, meshFilePath, mesh, coupling, defaultMannings, errorOut, units))
         return false;
 

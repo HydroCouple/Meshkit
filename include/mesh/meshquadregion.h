@@ -1,14 +1,14 @@
 /**
  * @file      meshquadregion.h
  * @brief     PSLG quad regions (workplans/QUAD_MESHING_REDESIGN_PLAN_2026-09-06.md §3, §4.1):
- *            closed polygons inside the meshing domain where quadrilateral cells are prioritised.
+ *            closed polygons inside the meshing domain where quadrilateral cells are prioritized.
  * @author    Caleb Buahin <caleb.buahin@gmail.com>
  * @date      2026
  * @license   Apache-2.0
  *
  * PSLG quad regions (workplans/QUAD_MESHING_REDESIGN_PLAN_2026-09-06.md §3,
  * §4.1): closed polygons inside the meshing domain where quadrilateral cells
- * are prioritised. Everything outside a region stays triangulated;
+ * are prioritized. Everything outside a region stays triangulated;
  * the interface conforms because the region ring is a constraint loop in the
  * same CDT.
  *
@@ -265,7 +265,7 @@ QString validateQuadRegionsDisjoint(const QVector<QuadRegion> &regions);
  * quality; allocates normalized/turn/output arrays, retains no pointers and changes no input
  * geometry.
  *
- * @details Auto-classification (plan §4.1) on the normalised ring.
+ * @details Auto-classification (plan §4.1) on the normalized ring.
  *
  * Turning angle at each vertex (exterior angle, CCW positive): - exactly four vertices with turn
  * in [90 − cornerTolDeg, 90 + cornerTolDeg] and every other |turn| < cornerTolDeg → Mapped

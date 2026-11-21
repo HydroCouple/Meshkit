@@ -67,7 +67,7 @@ ConstraintAuditReport finish(ConstraintAuditReport report)
     report.complete = !report.cancelled && !report.resourceLimited;
     report.ok = report.complete && report.violations == 0;
     if (report.cancelled)
-        report.error = "Constraint audit cancelled.";
+        report.error = "Constraint audit canceled.";
     else if (report.resourceLimited)
         report.error = "Constraint audit exceeded its work or memory budget.";
     return report;
@@ -733,7 +733,7 @@ ConstraintAuditReport auditMeshConstraints(const Vector<SimplificationFeature> &
                     if (!std::isfinite(error) || error > roundoff)
                         return;
                     // Edges merely touching a source endpoint belong to its
-                    // neighbour; they do not cover this segment's interior.
+                    // neighbor; they do not cover this segment's interior.
                     if (std::max(t0, t1) <= 0 || std::min(t0, t1) >= length)
                         return;
                     report.maximumXYDeviation = std::max(report.maximumXYDeviation, error);

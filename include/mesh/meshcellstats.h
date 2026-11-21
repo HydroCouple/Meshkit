@@ -132,14 +132,14 @@ using EdgeVertexPair = QPair<int, int>;
  *
  * @details Map every undirected edge to the triangles incident on it.
  *
- * \ref MeshResult stores no adjacency, and every pass that needs neighbours has so far rebuilt
+ * \ref MeshResult stores no adjacency, and every pass that needs neighbors has so far rebuilt
  * this by hand. Triangles with out-of-range indices are skipped. (meshminsizecleanup.cpp's
  * Topo::build still has its own copy fused into a larger loop; converge them when that file is
  * next touched.)
  */
 [[nodiscard]] QHash<EdgeVertexPair, QVector<int>> buildEdgeTriangles(const MeshResult &mesh);
 
-/*! \brief The 2D marcher's CFL characteristic length, per cell and summarised.
+/*! \brief The 2D marcher's CFL characteristic length, per cell and summarized.
  *
  * This is the quantity that actually sets the explicit timestep, and it is NOT
  * triangle area: a thin triangle can carry a respectable area and still have a
@@ -149,7 +149,7 @@ using EdgeVertexPair = QPair<int, int>;
  *
  * over that cell's INTERIOR faces, where \c xi_f is the shared edge length and
  * \c inv_dx_normal_f is 1 / max(|dc . n|, 0.3*|dc|) with \c dc the centroid
- * offset to the neighbour. Then dt = alpha * L_char / (sqrt(g*h) + |u|).
+ * offset to the neighbor. Then dt = alpha * L_char / (sqrt(g*h) + |u|).
  *
  * Mirrored from openswmm.engine
  * src/engine/2d/solver/InertialEdges.cpp:41-135 (edge assembly and
@@ -224,7 +224,7 @@ struct CflStats {
  * no runtime wet/depth/boundary pin behavior is modeled. Allocates scratch arrays, no source or
  * solver mutation.
  *
- * @details Summarise \ref computeCellLchar. \a ltsTiers mirrors the engine's `[2D_OPTIONS]
+ * @details Summarize \ref computeCellLchar. \a ltsTiers mirrors the engine's `[2D_OPTIONS]
  * LTS_TIERS` (1..8, default 4).
  */
 [[nodiscard]] CflStats computeCflStats(const MeshResult &mesh, int ltsTiers = 4);
@@ -235,7 +235,7 @@ struct CflStats {
  *  Grading: for every interior face the ratio of the two cells' sizes,
  *  size = longest edge (the quantity the ≤ 2 bound is stated on; a
  *  quadtree transition piece has a short edge but never a short longest
- *  edge next to a coarse neighbour). Orthogonality: the angle between the centroid
+ *  edge next to a coarse neighbor). Orthogonality: the angle between the centroid
  *  connector of the two cells and the face normal (0 for a regular grid).
  *  Angles: the smallest interior corner over every cell. */
 struct GradingStats {

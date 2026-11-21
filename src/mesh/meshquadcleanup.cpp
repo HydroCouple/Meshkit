@@ -198,7 +198,7 @@ struct Topology {
      * fan. Allocates a local neighbor list, reads geometry identifiers only, no mutation or
      * ownership retention.
      *
-     * @details Number of distinct neighbour vertices over the alive incident cells.
+     * @details Number of distinct neighbor vertices over the alive incident cells.
      */
     int valence(int v) const
     {
@@ -572,7 +572,7 @@ void smooth(Topology &T, const QVector<int> &movable, int iterations,
         }
 
         // Jacobi apply, then re-verify against the final configuration
-        // (neighbours moved too); revert violators until none remain.
+        // (neighbors moved too); revert violators until none remain.
         for (const Move &m : moves)
             V[m.v].xy = m.to;
         QVector<bool> reverted(moves.size(), false);

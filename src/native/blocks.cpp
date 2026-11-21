@@ -92,7 +92,7 @@ QuadBlockGrid quadBlockGridFromMesh(const MeshResult &mesh, double pitch,
             ++count[i];
             continue;
         }
-        // A triangle spanning cells gives its size to the cells whose centre it
+        // A triangle spanning cells gives its size to the cells whose center it
         // covers (and to its centroid cell, so thin ones still count).
         const auto side = [](const Point2 &a, const Point2 &b, const Point2 &q) {
             return (b.x() - a.x()) * (q.y() - a.y()) - (b.y() - a.y()) * (q.x() - a.x());
@@ -115,7 +115,7 @@ QuadBlockGrid quadBlockGridFromMesh(const MeshResult &mesh, double pitch,
                 }
             }
     }
-    // Blockers: every cell a ring or line passes through, plus its neighbours
+    // Blockers: every cell a ring or line passes through, plus its neighbors
     // (a block edge must not end up within a cell of a feature).
     for (const auto &line : blockers)
         for (int k = 0; k + 1 < line.size(); ++k) {
@@ -304,7 +304,7 @@ Vector<QuadRegion> placeQuadBlocks(const QuadBlockGrid &grid, const QuadBlockOpt
                 if (!free)
                     continue;
                 // Whole square quads: the rectangle shrinks to a multiple of
-                // the spacing on each side, centred in its cells.
+                // the spacing on each side, centered in its cells.
                 const double cw = (rc.c1 - rc.c0) * grid.pitch, ch = (rc.r1 - rc.r0) * grid.pitch;
                 const double w = std::floor(cw / spacing) * spacing,
                              h = std::floor(ch / spacing) * spacing;

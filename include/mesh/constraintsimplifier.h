@@ -35,7 +35,7 @@ struct ConstraintSimplificationPolicy {
     /// Must be finite and nonnegative.
     double maxZDeviation = 0; // Z, in the supplied elevation units; 0 preserves exact heights
     /// @brief Corner limit in degrees (0 = straight on): a vertex whose direction change
-    /// exceeds it, or that has a zero-length neighbouring edge, is kept. Valid range [0, 180].
+    /// exceeds it, or that has a zero-length neighboring edge, is kept. Valid range [0, 180].
     double maxTurnDegrees = 5;
     /// @brief Rings only: largest |area change| as a fraction of |original area|, in [0, 1] or
     /// exactly -1. A ring exceeding it is rolled back to its original geometry.

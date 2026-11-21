@@ -210,7 +210,7 @@ namespace pslg
  * Zero-length adjacent edges count as zero turn. Heuristic can change route topology and has no
  * deviation/shape preservation guarantee; allocates copies, no source mutation or engine update.
  *
- * @details Undo two digitising faults in a link alignment that fold it back on itself
+ * @details Undo two digitizing faults in a link alignment that fold it back on itself
  * (MESH_TRIANGLE_ENGINE_PLAN_2026-09-30.md, Bellinge).
  *
  * A vertex list stored from the to-node to the from-node runs the path out to the far end and
@@ -342,7 +342,7 @@ void snapAndDedupe(QVector<mesh::SteinerPoint> &pts, double snapEps);
  * @details Greedy minimum-separation thinning in input order.
  *
  * pts[i] is kept iff no already-kept point lies strictly within \p minSep of it — so input order
- * IS the priority order (earlier points win their neighbourhood).  Spatial hash with cell size =
+ * IS the priority order (earlier points win their neighborhood).  Spatial hash with cell size =
  * minSep and a 3×3 scan, the same idiom as the terrain Poisson-disk filter.  Returns one keep
  * flag per point; minSep <= 0 keeps everything.
  */
@@ -412,7 +412,7 @@ struct PreparedRing {
  * Rings are processed in chunks via QtConcurrent::blockingMapped; between chunks \p isCancelled
  * is polled and \p onChunk(done, total) reports progress.  \p out receives one entry per input
  * ring, in input order. Invalid rings are counted into \p skippedOut.  Returns false only when
- * cancelled (out then holds the chunks finished so far).
+ * canceled (out then holds the chunks finished so far).
  */
 bool prepareHoleRings(const QVector<QVector<QPointF>> &raw, double simplifyEps, double maxEdgeLen,
                       QVector<PreparedRing> *out, const std::function<bool()> &isCancelled = {},

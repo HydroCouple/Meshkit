@@ -52,7 +52,7 @@ struct ConstraintAuditReport {
      * @var ok
      * @brief complete and no violations: the only state that certifies the input.
      * @var complete
-     * @brief Not cancelled and not resource-limited. Structural violations can still end
+     * @brief Not canceled and not resource-limited. Structural violations can still end
      * the audit early with complete set.
      * @var cancelled
      * @brief ConstraintAuditOptions::cancelled stopped the audit.

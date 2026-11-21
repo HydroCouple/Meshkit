@@ -397,7 +397,7 @@ private slots:
         QVERIFY(tagged > 0);
         QVERIFY(untagged > 0);
         // Gates: every triangle >= 30° (no input angle here is below 60°),
-        // neighbours within 2x, no quads (none were asked for).
+        // neighbors within 2x, no quads (none were asked for).
         const mesh::GradingStats gs = mesh::computeGradingStats(m);
         QVERIFY2(gs.ratioMax <= 2.0 + 1e-9,
                  qPrintable(QStringLiteral("ratio %1").arg(gs.ratioMax)));
@@ -451,7 +451,7 @@ private slots:
      */
     void openGroundThinsOutToTheCap()
     {
-        // One short conduit in a 2 km square; h grows at 0.5 per metre from
+        // One short conduit in a 2 km square; h grows at 0.5 per meter from
         // 5 m to a 200 m cap. Cells far away must reach the cap.
         MeshGenerator g;
         g.setDomain(rect(0, 0, 2000, 2000));
@@ -546,7 +546,7 @@ private slots:
         g.setOptions(o);
         const MeshResult m = g.generate();
         QVERIFY2(m.ok, qPrintable(m.errorMsg));
-        // With every angle >= 30° two neighbours' longest edges differ by at
+        // With every angle >= 30° two neighbors' longest edges differ by at
         // most 1/sin 30° = 2; the graded field keeps the median near 1:1.
         const mesh::GradingStats gs = mesh::computeGradingStats(m);
         qInfo("graded: ratio p50 %.3f p95 %.3f max %.3f, min angle %.2f", gs.ratioP50, gs.ratioP95,
@@ -557,7 +557,7 @@ private slots:
                  qPrintable(QStringLiteral("p50 %1 p95 %2").arg(gs.ratioP50).arg(gs.ratioP95)));
         QVERIFY(gs.minAngleDeg >= 30.0 - 1e-6);
         QCOMPARE(gs.cellsBelow10Deg, 0);
-        // Cells near the centre are small, near the edge large.
+        // Cells near the center are small, near the edge large.
         double nearMin = 1e9, farMax = 0.0;
         for (int i = 0; i < m.triangles.size(); ++i) {
             const mesh::CellGeom cg = mesh::cellGeom(m.vertices, m.triangles[i]);
@@ -774,7 +774,7 @@ private slots:
         QVERIFY2(m.ok, qPrintable(m.errorMsg));
         QCOMPARE(missingConstraintEdges(m), 0);
         QVERIFY(std::abs(totalArea(m) - 10000.0) < 1e-6);
-        // Within 1e-6 of the centre: exactly one vertex, on all three lines.
+        // Within 1e-6 of the center: exactly one vertex, on all three lines.
         int centre = -1, near = 0;
         for (int i = 0; i < m.vertices.size(); ++i)
             if (QLineF(m.vertices[i].xy, QPointF(50, 50)).length() < 1e-6) {
@@ -1019,7 +1019,7 @@ private slots:
     // of their segments can be exact translates. Their cross product is then
     // exactly zero, but a contracted (FMA) a*b - c*d returns the rounding
     // error of one product instead. Constraint joining used to accept the
-    // resulting t, u in (0, 1) as a crossing between pieces metres apart,
+    // resulting t, u in (0, 1) as a crossing between pieces meters apart,
     // splice the point into the far piece, and leave a string that doubles
     // back (Boston channel 1202640004_IM). Positions here are exact (30-bit
     // fractional steps) while the step products round. The large domain makes
@@ -1148,7 +1148,7 @@ private slots:
         const MeshResult second = build(blocks);
         QVERIFY2(second.ok, qPrintable(second.errorMsg));
         QVERIFY(second.quadCount() > 50);
-        // Every quad edge is shared with a neighbour or lies on the domain.
+        // Every quad edge is shared with a neighbor or lies on the domain.
         QHash<QPair<int, int>, int> uses;
         for (const auto &c : second.triangles)
             for (int k = 0; k < c.vertexCount(); ++k) {

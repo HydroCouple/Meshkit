@@ -48,7 +48,7 @@
 
 /**
  * @namespace meshkit::native_detail
- * @brief Implementation helpers of the native jobs and codecs (failure signalling, work
+ * @brief Implementation helpers of the native jobs and codecs (failure signaling, work
  * accounting, file publication); not installed and not part of the supported API.
  */
 
