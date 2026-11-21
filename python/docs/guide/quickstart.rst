@@ -28,6 +28,13 @@ check the report and save the mesh.
    report = meshkit.write("square.mkb", result)
    assert report["complete"], report
 
+.. figure:: ../images/mixed-square.svg
+   :alt: A mapped square block of 16 quadrilaterals shares its boundary with 88 surrounding triangles.
+   :width: 560px
+
+   Mesh produced by the request above. The blue patch follows the required
+   quadrilateral region. Each cell outline comes from the returned vertex indices.
+
 What happened:
 
 * ``points`` are the source vertices; the ``outer`` path joins them into the

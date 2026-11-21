@@ -131,16 +131,9 @@ html_theme_options = {
         "image_light": "images/hydrocouple_logo.png",
         "image_dark": "images/hydrocouple_logo.png",
     },
-    # Top-nav cross-link back to the Doxygen C++ docs.
-    # Deployment layout (see .github/workflows/documentation.yml):
-    #     /         Doxygen docs (root)
-    #     /python/  these (Sphinx) docs
-    # ``../index.html`` resolves to the Doxygen root when both sites are
-    # co-deployed under GitHub Pages.  When viewing the Sphinx docs
-    # locally without the Doxygen bundle, this link 404s — that's an
-    # accepted local-only limitation.
+    # Use the published manual URL from every nested Python page.
     "external_links": [
-        {"name": "C++ API Docs", "url": "../index.html"},
+        {"name": "C++ API Docs", "url": "https://www.hydrocouple.org/Meshkit/"},
     ],
     "icon_links": [
         {
@@ -166,6 +159,6 @@ html_title = 'MeshKit'
 html_favicon = 'images/hydrocouple_logo.png'
 
 html_static_path = ['_static']
-html_css_files = ['meshkit.css']
+html_css_files = ['meshkit.css', 'hydrocouple-palette.css']
 
 htmlhelp_basename = 'meshkitdoc'
