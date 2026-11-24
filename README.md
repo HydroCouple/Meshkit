@@ -252,3 +252,15 @@ These synthetic probes exclude terrain/GIS, mixed patch planning and rendering.
 ## Completion validation
 
 The full mixed job produced **7,123,030 vertices and 7,983,065 cells** (6,250,000 quads plus 1,733,065 triangles) in 18.79 s, at 1,862,631,424 bytes process peak RSS on this Apple arm64 workstation. It includes 100 mapped patches, a hole, junction/shared reversed line owners, a bilinear terrain certificate, and final source/size/edge/transition checks, all passing. This synthetic terrain case excludes GUI rendering and is not a worst-case guarantee. The supplied Bellinge boundary/DEM also passes a separate mixed job. See [validation](VALIDATION.md) for scope and reproducible evidence.
+
+## Browser bindings
+
+With Emscripten enabled, run `npm --prefix wasm run build` and `npm --prefix wasm test`.
+The optional `@hydrocouple/meshkit-wasm` ES module and its WASM binary are built
+under `wasm/dist`. Load the module in a worker and call `runJob` with a planar
+domain, holes or pre-noded breaklines, target triangle size and a node-sampled
+elevation raster in metres. Path kinds 0–3 denote outer, hole, line and region.
+Raster rows increase toward positive Y. Check the returned status before using
+the owned XYZ, triangle, tagged edge and source vertex buffers. The public types
+are in `wasm/index.d.ts`. Each worker owns its module and can be terminated to
+cancel a synchronous job.

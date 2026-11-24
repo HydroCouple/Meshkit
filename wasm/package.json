@@ -1,0 +1,13 @@
+{
+  "name": "@hydrocouple/meshkit-wasm",
+  "version": "0.2.0-dev.0",
+  "type": "module",
+  "license": "Apache-2.0",
+  "exports": { ".": { "types": "./index.d.ts", "import": "./dist/meshkit.mjs" } },
+  "files": ["dist/meshkit.mjs", "dist/meshkit.wasm", "index.d.ts", "LICENSE", "NOTICE"],
+  "scripts": {
+    "build": "emcmake cmake -S . -B build -DCMAKE_BUILD_TYPE=Release && cmake --build build --target meshkit_browser --parallel && mkdir -p dist && cp build/meshkit.mjs build/meshkit.wasm dist/",
+    "prepack": "npm run build && cp ../LICENSE ../NOTICE .",
+    "test": "node --test smoke.test.mjs"
+  }
+}
